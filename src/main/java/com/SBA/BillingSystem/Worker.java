@@ -27,17 +27,14 @@ public class Worker {
     public Worker() {
     }
 
-//    public Worker(int workerID, String workerFName, String workerLName, String workerUser, String workerPW, boolean isAdmin) {
-//        this.workerID = workerID;
-//        this.workerFName = workerFName;
-//        this.workerLName = workerLName;
-//        this.workerUser = workerUser;
-//        this.workerPW = workerPW;
-//        this.isAdmin = isAdmin;
-//    }
-
-    
-
+    public Worker(int workerID, String workerFName, String workerLName, String workerUser, String workerPW, boolean isAdmin) {
+        this.workerID = workerID;
+        this.workerFName = workerFName;
+        this.workerLName = workerLName;
+        this.workerUser = workerUser;
+        this.workerPW = workerPW;
+        this.isAdmin = isAdmin;
+    }
 
 
     public String getworkerFName() {
@@ -89,7 +86,6 @@ public class Worker {
         return isAdmin;
     }
     
-
 
     public void setAdmin(boolean isAdmin) {
         this.isAdmin = isAdmin;

@@ -1,17 +1,25 @@
 package com.SBA.BillingSystem;
 
+import jakarta.persistence.*;
+
+
+
+@Entity
+@Table(name = "company")
 public class Company {
 	
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY) //AutoGenerates an ID
 	private int companyID;
 	private String companyName;
 	private String companyAddress;
-	private String companyPhone;
+	private int companyPhone;
 	private String companyEmail;
 
 	public Company() {
 	}
 
-	public Company(int companyID, String companyName, String companyAddress, String companyPhone, String companyEmail) {
+	public Company(int companyID, String companyName, String companyAddress, int companyPhone, String companyEmail) {
 		this.companyID = companyID;
 		this.companyName = companyName;
 		this.companyAddress = companyAddress;
@@ -31,7 +39,7 @@ public class Company {
 		return companyAddress;
 	}
 
-	public String getCompanyPhone() {
+	public int getCompanyPhone() {
 		return companyPhone;
 	}
 

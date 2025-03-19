@@ -29,6 +29,36 @@ public class workOrder {
 		this.workOrderPDF = workOrderPDF;
 	}
 	
+	public void setWorkOrderID(int workOrderID) {
+		this.workOrderID = workOrderID;
+	}
 	
+	public void setWokerID(int workerID) {
+		this.workerID = workerID;
+	}
+	
+	public void setCompanyID(int companyID) {
+		this.companyID = companyID;
+	}
+	
+	public void setWorkOrderPDF(String workOrderPDF) {
+		this.workOrderPDF = workOrderPDF;
+	}
+	
+	public int getWorkOrderID() {
+		return workOrderID;
+	}
+	
+	public int getWOWorkerID() {
+		return workerID;
+	}
+	
+	public int getWOCompanyID() {
+		return companyID;
+	}
+	
+	public String getWorkOrderPDF() {
+		return workOrderPDF;
+	}
 
 }
