@@ -27,6 +27,9 @@ setting up the project:
 				Still operating under system variables, click on 'PATH' and add a path to the \bin file for java
 					example:
 						C:\...\Java\jdk-23\bin
+      installing xampp
+      		go to https://www.apachefriends.org/download.html and select the version compatible with your device
+		run the installer
 	
 	installing node.js and npm
 		go to nodejs.org/download, and select the version built for your computer
@@ -63,19 +66,7 @@ setting up the project:
 				file->import->git->projects from git->existing local repository
 					select the cloned repository and hit 'finish'
 			when the project is imported and can be found in the 'package explorer'
-				open the two files called application.properties found under 
-					small-business-billing-and-payroll->myDemo->target->META-INF
-					and
-					small-buisiness-billing-and-payroll->myDemo->src->main->resources
-
-					edit the following fields to make the project compatible with your computer
-						spring.datasource.url=
-							change to the url of your server and database "jdbc:mysql://[hostname]:[port]/[database name]"
-								[database name] == payrollBillingDB
-						spring.datasource.username
-							change this to the value of your username for MySQL, if your username is not root
-						spring.datasource.password
-							change this to the value of your password for MySQL
+				
 				in the project explorer window, right click on the root folder and click maven->convert to maven project
 
 
