@@ -54,7 +54,7 @@ const LoginPage = () => {
                 Steve Ball & Associates
             </Typography>
             <Box sx={{ mt: 2, p: 4, boxShadow: 3, borderRadius: 2, width: '100%' }}>
-                <Typography variant="h4" gutterBottom>Login</Typography>
+                <Typography variant="h4" gutterBottom align="center">Login</Typography>
                 {error && <Typography color="error">{error}</Typography>}
                 {message && <Typography color="primary">{message}</Typography>}
                 <TextField
@@ -98,3 +98,4 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
+

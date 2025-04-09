@@ -38,8 +38,8 @@ const HomePage = () => {
                         width: 250,
                         boxSizing: 'border-box',
                         backgroundColor: '#f4f4f4',
-                        textAlign: 'center', // Center the text
-                        padding: '20px 0', // Space around the title
+                        textAlign: 'center', 
+                        padding: '20px 0', 
                     },
                 }}
             >

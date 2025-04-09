@@ -1,13 +1,29 @@
 import React, { useState } from 'react';
-import { Box, Button, Typography, Drawer, List, ListItem, ListItemButton, ListItemText, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import {
+    Box, Drawer, List, ListItem, ListItemButton, ListItemText,
+    Dialog, DialogTitle, DialogContent, DialogActions, Typography, Button
+} from '@mui/material';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 
 const AdminHomePage = () => {
     const [open, setOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState('/admin');
     const navigate = useNavigate();
+    const location = useLocation();
+
+    const menuItems = [
+        { label: 'Assign Work', path: '/admin/assign' },
+        { label: 'View Completed Work', path: '/admin/completed' },
+        { label: 'Companies', path: '/admin/companies' },
+        { label: 'Inspector Profiles', path: '/admin/inspectors' },
+        { label: 'Billing', path: '/admin/billing' },
+        { label: 'Profile', path: '/admin/profile' },
+        { label: 'Logout', path: '/admin/logout' }
+    ];
 
     const handleLogoutClick = () => {
         setOpen(true);
+        setActiveTab('/admin/logout'); 
     };
 
     const handleConfirmLogout = () => {
@@ -18,17 +34,17 @@ const AdminHomePage = () => {
 
     const handleCancelLogout = () => {
         setOpen(false);
+        setActiveTab(location.pathname); 
     };
 
-    const sidebarItems = [
-        'Assign Work',
-        'View Completed Work',
-        'Companies',
-        'Inspector Profiles',
-        'Billing',
-        'Profile',
-        'Logout'
-    ];
+    const handleItemClick = (path, label) => {
+        if (label === 'Logout') {
+            handleLogoutClick();
+        } else {
+            navigate(path);
+            setActiveTab(path);
+        }
+    };
 
     return (
         <Box sx={{ display: 'flex', height: '100vh' }}>
@@ -41,8 +57,8 @@ const AdminHomePage = () => {
                         width: 250,
                         boxSizing: 'border-box',
                         backgroundColor: '#f4f4f4',
-                        textAlign: 'center', // Center the text
-                        padding: '20px 0', // Space around the title
+                        textAlign: 'center',
+                        padding: '20px 0',
                     },
                 }}
             >
@@ -50,21 +66,25 @@ const AdminHomePage = () => {
                     Steve Ball & Associates
                 </Typography>
                 <List>
-                    {sidebarItems.map((item, index) => (
+                    {menuItems.map((item, index) => (
                         <ListItem key={index} disablePadding>
-                            <ListItemButton onClick={item === 'Logout' ? handleLogoutClick : null}>
-                                <ListItemText primary={item} />
+                            <ListItemButton
+                                onClick={() => handleItemClick(item.path, item.label)}
+                                sx={{
+                                    backgroundColor: activeTab === item.path ? '#bbdefb' : 'inherit'
+                                }}
+                            >
+                                <ListItemText primary={item.label} />
                             </ListItemButton>
                         </ListItem>
                     ))}
                 </List>
             </Drawer>
+
             <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-                <Typography variant="h4">Admin Dashboard</Typography>
-                <Typography variant="body1" sx={{ mt: 2 }}>
-                    Welcome to the admin dashboard! Select an option from the sidebar to get started.
-                </Typography>
+                <Outlet />
             </Box>
+
             <Dialog open={open} onClose={handleCancelLogout}>
                 <DialogTitle>Confirm Logout</DialogTitle>
                 <DialogContent>
@@ -80,4 +100,6 @@ const AdminHomePage = () => {
 };
 
 export default AdminHomePage;
+
+
 
