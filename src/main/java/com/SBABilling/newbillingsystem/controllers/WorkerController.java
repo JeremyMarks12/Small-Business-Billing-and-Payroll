@@ -37,15 +37,42 @@ public class WorkerController {
         if (worker.isPresent()) {
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Login successful");
+            response.put("workerID", worker.get().getWorkerID());
             response.put("username", worker.get().getUsername());
             response.put("firstName", worker.get().getFirstName());
             response.put("lastName", worker.get().getLastName());
+            response.put("password", worker.get().getPassword());
             response.put("isAdmin", worker.get().isAdmin());
             return ResponseEntity.ok(response);
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Collections.singletonMap("message", "Invalid username or password"));
         }
     }
+
+    @PutMapping("/update/{id}") // Allows the user to update their username or password if they choose to do so.
+    public ResponseEntity<String> updateWorker(@PathVariable int id, @RequestBody Worker updatedWorker) {
+        Optional<Worker> existing = workerService.getAllWorkers().stream()
+            .filter(w -> w.getWorkerID() == id)
+            .findFirst();
+
+        if (existing.isPresent()) {
+            Worker worker = existing.get();
+
+            if (updatedWorker.getUsername() != null && !updatedWorker.getUsername().isEmpty()) {
+                worker.setUsername(updatedWorker.getUsername());
+            }
+
+            if (updatedWorker.getPassword() != null && !updatedWorker.getPassword().isEmpty()) {
+                worker.setPassword(updatedWorker.getPassword());
+            }
+
+            workerService.saveWorker(worker);
+            return ResponseEntity.ok("Worker updated successfully");
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Worker not found");
+        }
+    }
+
 
 
 }

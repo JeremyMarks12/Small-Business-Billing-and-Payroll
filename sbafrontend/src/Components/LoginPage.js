@@ -31,6 +31,9 @@ const LoginPage = () => {
                 const data = await response.json();
                 setMessage(data.message);
                 console.log("Login Response:", data);
+                
+                localStorage.setItem('loggedInUser', JSON.stringify(data)); // Store user
+
                 setTimeout(() => {
                     if (data.isAdmin) {
                         navigate('/admin');

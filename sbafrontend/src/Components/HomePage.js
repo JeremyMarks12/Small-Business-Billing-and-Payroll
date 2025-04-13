@@ -1,79 +1,99 @@
 import React, { useState } from 'react';
-import { Box, Button, Typography, Drawer, List, ListItem, ListItemButton, ListItemText, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import {
+  Box, Drawer, List, ListItem, ListItemButton, ListItemText,
+  Dialog, DialogTitle, DialogContent, DialogActions, Typography, Button
+} from '@mui/material';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 
 const HomePage = () => {
-    const [open, setOpen] = useState(false);
-    const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('/worker');
+  const navigate = useNavigate();
+  const location = useLocation();
 
-    const handleLogoutClick = () => {
-        setOpen(true);
-    };
+  const menuItems = [
+    { label: 'View Assigned Work', path: '/worker/assigned' },
+    { label: 'Billing', path: '/worker/billing' },
+    { label: 'Profile', path: '/worker/profile' },
+    { label: 'Logout', path: '/worker/logout' },
+  ];
 
-    const handleConfirmLogout = () => {
-        setOpen(false);
-        navigate('/');
-        alert('You have been logged out successfully.');
-    };
+  const handleLogoutClick = () => {
+    setOpen(true);
+    setActiveTab('/worker/logout');
+  };
 
-    const handleCancelLogout = () => {
-        setOpen(false);
-    };
+  const handleConfirmLogout = () => {
+    setOpen(false);
+    navigate('/');
+    alert('You have been logged out successfully.');
+  };
 
-    const sidebarItems = [
-        'View Assigned Work',
-        'Billing',
-        'Profile',
-        'Logout'
-    ];
+  const handleCancelLogout = () => {
+    setOpen(false);
+    setActiveTab(location.pathname);
+  };
 
-    return (
-        <Box sx={{ display: 'flex', height: '100vh' }}>
-            <Drawer
-                variant="permanent"
+  const handleItemClick = (path, label) => {
+    if (label === 'Logout') {
+      handleLogoutClick();
+    } else {
+      navigate(path);
+      setActiveTab(path);
+    }
+  };
+
+  return (
+    <Box sx={{ display: 'flex', height: '100vh' }}>
+      <Drawer
+        variant="permanent"
+        sx={{
+          width: 250,
+          flexShrink: 0,
+          '& .MuiDrawer-paper': {
+            width: 250,
+            boxSizing: 'border-box',
+            backgroundColor: '#f4f4f4',
+            textAlign: 'center',
+            padding: '20px 0',
+          },
+        }}
+      >
+        <Typography variant="h5" sx={{ fontWeight: 'bold', marginBottom: 2 }}>
+          Steve Ball & Associates
+        </Typography>
+        <List>
+          {menuItems.map((item, index) => (
+            <ListItem key={index} disablePadding>
+              <ListItemButton
+                onClick={() => handleItemClick(item.path, item.label)}
                 sx={{
-                    width: 250,
-                    flexShrink: 0,
-                    '& .MuiDrawer-paper': {
-                        width: 250,
-                        boxSizing: 'border-box',
-                        backgroundColor: '#f4f4f4',
-                        textAlign: 'center', 
-                        padding: '20px 0', 
-                    },
+                  backgroundColor: activeTab === item.path ? '#bbdefb' : 'inherit'
                 }}
-            >
-                <Typography variant="h5" sx={{ fontWeight: 'bold', marginBottom: 2 }}>
-                    Steve Ball & Associates
-                </Typography>
-                <List>
-                    {sidebarItems.map((item, index) => (
-                        <ListItem key={index} disablePadding>
-                            <ListItemButton onClick={item === 'Logout' ? handleLogoutClick : null}>
-                                <ListItemText primary={item} />
-                            </ListItemButton>
-                        </ListItem>
-                    ))}
-                </List>
-            </Drawer>
-            <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-                <Typography variant="h4">Worker Dashboard</Typography>
-                <Typography variant="body1" sx={{ mt: 2 }}>
-                    Welcome to your dashboard! Select an option from the sidebar to get started.
-                </Typography>
-            </Box>
-            <Dialog open={open} onClose={handleCancelLogout}>
-                <DialogTitle>Confirm Logout</DialogTitle>
-                <DialogContent>
-                    Are you sure you want to log out?
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCancelLogout} color="primary">No</Button>
-                    <Button onClick={handleConfirmLogout} color="primary" autoFocus>Yes</Button>
-                </DialogActions>
-            </Dialog>
-        </Box>
-    );
+              >
+                <ListItemText primary={item.label} />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+      </Drawer>
+
+      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+        <Outlet />
+      </Box>
+
+      <Dialog open={open} onClose={handleCancelLogout}>
+        <DialogTitle>Confirm Logout</DialogTitle>
+        <DialogContent>
+          Are you sure you want to log out?
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelLogout} color="primary">No</Button>
+          <Button onClick={handleConfirmLogout} color="primary" autoFocus>Yes</Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
 };
 
 export default HomePage;

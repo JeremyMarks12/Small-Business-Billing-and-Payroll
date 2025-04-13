@@ -7,6 +7,7 @@ import AdminHomePage from './Components/AdminHomePage';
 import WorkerHomePage from './Components/HomePage';
 import InspectorProfiles from './Components/InspectorProfiles';
 import CompanyProfiles from './Components/CompanyProfiles';
+import ProfileTab from './Components/ProfileTab';
 
 function App() {
   return (
@@ -14,12 +15,13 @@ function App() {
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/home" element={<HomePage />} />
-        <Route path="/worker" element={<WorkerHomePage />} />
-        
+        <Route path="/worker" element={<WorkerHomePage />}>
+          <Route path="profile" element={<ProfileTab />} /> {/* workers */}
+        </Route>
         <Route path="/admin" element={<AdminHomePage />}>
           <Route path="inspectors" element={<InspectorProfiles />} />
           <Route path="companies" element={<CompanyProfiles />} />
-          {/* Routes for other sidebar tabs if we need it.  */}
+          <Route path="profile" element={<ProfileTab />} /> {/* admins */}
         </Route>
       </Routes>
     </Router>
@@ -27,5 +29,6 @@ function App() {
 }
 
 export default App;
+
 
 
