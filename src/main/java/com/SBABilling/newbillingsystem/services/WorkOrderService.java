@@ -1,16 +1,16 @@
 package com.SBABilling.newbillingsystem.services;
 
+import java.time.*;
 import java.util.*;
 
 import com.SBABilling.newbillingsystem.models.*;
 
-
 public interface WorkOrderService {
+    WorkOrder saveWorkOrder(WorkOrder workOrder);
 
-    public WorkOrder saveWorkOrder(WorkOrder WorkOrder);
+    List<WorkOrder> getAllWorkOrders();
 
-    public List<WorkOrder> getAllWorkOrders();
+    List<WorkOrder> getWorkOrdersByInspectorName(String inspectorName);
 
-    // public WorkOrder findByCompanyID(Integer companyID);
-
+    List<WorkOrder> getWorkOrdersByInspectorNameAndDate(String inspectorName, LocalDate assignmentDate);
 }

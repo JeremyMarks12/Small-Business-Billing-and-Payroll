@@ -8,6 +8,8 @@ import WorkerHomePage from './Components/HomePage';
 import InspectorProfiles from './Components/InspectorProfiles';
 import CompanyProfiles from './Components/CompanyProfiles';
 import ProfileTab from './Components/ProfileTab';
+import AssignWork from './Components/AssignWork';
+import InspectorAssignedWork from './Components/InspectorAssignedWork';
 
 function App() {
   return (
@@ -17,8 +19,10 @@ function App() {
         <Route path="/home" element={<HomePage />} />
         <Route path="/worker" element={<WorkerHomePage />}>
           <Route path="profile" element={<ProfileTab />} /> {/* workers */}
+          <Route path="assigned" element={<InspectorAssignedWork />} /> {/* View Work*/}
         </Route>
         <Route path="/admin" element={<AdminHomePage />}>
+          <Route path="assign" element={<AssignWork />} /> {/* Assign Work route */}
           <Route path="inspectors" element={<InspectorProfiles />} />
           <Route path="companies" element={<CompanyProfiles />} />
           <Route path="profile" element={<ProfileTab />} /> {/* admins */}

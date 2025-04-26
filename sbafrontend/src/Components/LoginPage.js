@@ -31,14 +31,16 @@ const LoginPage = () => {
                 const data = await response.json();
                 setMessage(data.message);
                 console.log("Login Response:", data);
-                
-                localStorage.setItem('loggedInUser', JSON.stringify(data)); // Store user
+
+                //Save user info
+                localStorage.setItem('loggedInUser', JSON.stringify(data)); 
+                localStorage.setItem('username', username);
 
                 setTimeout(() => {
                     if (data.isAdmin) {
                         navigate('/admin');
                     } else {
-                        navigate('/home');
+                        navigate('/worker'); 
                     }
                 }, 500);
             } else {
@@ -101,4 +103,5 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
+
 

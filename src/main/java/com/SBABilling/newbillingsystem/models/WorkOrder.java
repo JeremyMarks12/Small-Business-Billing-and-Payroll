@@ -1,5 +1,7 @@
 package com.SBABilling.newbillingsystem.models;
 
+import java.time.*;
+
 import jakarta.persistence.*;
 
 @Entity
@@ -7,51 +9,50 @@ public class WorkOrder {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int WorkOrderID;
-    private int workerID;
-    private int companyID;
-    private String WorkOrderPDF;
+    private int id;
+
+    @ManyToOne
+    @JoinColumn(name = "inspector_id", nullable = false)
+    private Worker inspector;
+
+    private LocalDate assignedDate;
+
+    private String pdfPath; // This will be the server path or file reference
 
     public WorkOrder() {
     }
 
-//  public WorkOrder(int WorkOrderID, int workerID, int companyID, String WorkOrderPDF) {
-//      this.WorkOrderID = WorkOrderID;
-//      this.workerID = workerID;
-//      this.companyID = companyID;
-//      this.WorkOrderPDF = WorkOrderPDF;
-//  }
-
-    public void setWorkOrderID(int WorkOrderID) {
-        this.WorkOrderID = WorkOrderID;
+    public WorkOrder(Worker inspector, LocalDate assignedDate, String pdfPath) {
+        this.inspector = inspector;
+        this.assignedDate = assignedDate;
+        this.pdfPath = pdfPath;
     }
 
-    public void setWokerID(int workerID) {
-        this.workerID = workerID;
+    public int getId() {
+        return id;
     }
 
-    public void setCompanyID(int companyID) {
-        this.companyID = companyID;
+    public Worker getInspector() {
+        return inspector;
     }
 
-    public void setWorkOrderPDF(String WorkOrderPDF) {
-        this.WorkOrderPDF = WorkOrderPDF;
+    public void setInspector(Worker inspector) {
+        this.inspector = inspector;
     }
 
-    public int getWorkOrderID() {
-        return WorkOrderID;
+    public LocalDate getAssignedDate() {
+        return assignedDate;
     }
 
-    public int getWOWorkerID() {
-        return workerID;
+    public void setAssignedDate(LocalDate assignedDate) {
+        this.assignedDate = assignedDate;
     }
 
-    public int getWOCompanyID() {
-        return companyID;
+    public String getPdfPath() {
+        return pdfPath;
     }
 
-    public String getWorkOrderPDF() {
-        return WorkOrderPDF;
+    public void setPdfPath(String pdfPath) {
+        this.pdfPath = pdfPath;
     }
-
 }
