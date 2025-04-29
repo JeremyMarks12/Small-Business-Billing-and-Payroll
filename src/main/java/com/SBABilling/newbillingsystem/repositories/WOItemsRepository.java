@@ -1,5 +1,10 @@
 package com.SBABilling.newbillingsystem.repositories;
 
-public interface WOItemsRepository {
+import org.springframework.data.jpa.repository.*;
+
+import com.SBABilling.newbillingsystem.models.*;
+
+public interface WOItemsRepository extends JpaRepository<WOItems, Integer> {
 
 }
+

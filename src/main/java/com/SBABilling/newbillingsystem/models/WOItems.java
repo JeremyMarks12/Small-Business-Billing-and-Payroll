@@ -1,98 +1,111 @@
 package com.SBABilling.newbillingsystem.models;
 
+import java.time.*;
+
 import jakarta.persistence.*;
 
 @Entity
 public class WOItems {
 
+
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) //AutoGenerates an ID
-    private int WOItemsID;
-    private String WOItems;
-    private int woItemQty;
-    private double woItemPrice;
-    private int workerID;
-    private int workOrderID;
-    public int getWorkOrderID() {
-        return workOrderID;
-    }
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
 
-    public void setWorkOrderID(int workOrderID) {
-        this.workOrderID = workOrderID;
-    }
 
-    private int companyID;
-    private String work_orderPDF;   // This should be an a file type... Fix as needed.
+    private String name;
+    private String company;
+    private String fileNumber;
+    private double myPrice;
+    private double sBATotal;
+    private int plat;
+    private String assessment;
+    private String comments;
+    private String address;
+    private LocalDate date;
+
 
     public WOItems() {
     }
 
-//  public WOItems(int WOItemsID, String WOItems, int woItemQty, double woItemPrice, int workerID, int workOrderID, int companyID,
-//          String work_orderPDF) {
-//      this.WOItemsID = WOItemsID;
-//      this.WOItems = WOItems;
-//      this.woItemQty = woItemQty;
-//      this.woItemPrice = woItemPrice;
-//      this.workerID = workerID;
-//      this.workOrderID = workOrderID;
-//      this.companyID = companyID;
-//      this.work_orderPDF = work_orderPDF;
-//  }
 
-    public int getWOItemsID() {
-        return WOItemsID;
+    public String getName() {
+        return name;
     }
 
-    public void setWOItemsID(int WOItemsID) {
-        this.WOItemsID = WOItemsID;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public String getWOItems() {
-        return WOItems;
+    public String getCompany() {
+        return company;
     }
 
-    public void setWOItems(String WOItems) {
-        this.WOItems = WOItems;
+    public void setCompany(String company) {
+        this.company = company;
     }
 
-    public int getWoItemQty() {
-        return woItemQty;
+    public String getFileNumber() {
+        return fileNumber;
     }
 
-    public void setWoItemQty(int woItemQty) {
-        this.woItemQty = woItemQty;
+    public void setFileNumber(String fileNumber) {
+        this.fileNumber = fileNumber;
     }
 
-    public double getWoItemPrice() {
-        return woItemPrice;
+    public double getMyPrice() {
+        return myPrice;
     }
 
-    public void setWoItemPrice(double woItemPrice) {
-        this.woItemPrice = woItemPrice;
+    public void setMyPrice(float myPrice) {
+        this.myPrice = myPrice;
     }
 
-    public int getWorkerID() {
-        return workerID;
+    public double getSBATotal() {
+        return sBATotal;
     }
 
-    public void setWorkerID(int workerID) {
-        this.workerID = workerID;
+    public void setSBATotal(int sBATotal) {
+        this.sBATotal = sBATotal;
     }
 
-    public int getCompanyID() {
-        return companyID;
+    public int getPlat() {
+        return plat;
     }
 
-    public void setCompanyID(int companyID) {
-        this.companyID = companyID;
+    public void setPlat(int plat) {
+        this.plat = plat;
     }
 
-    public String getWork_orderPDF() {
-        return work_orderPDF;
+    public String getAssessment() {
+        return assessment;
+    }
+    public void setAssessment(String assessment) {
+        this.assessment = assessment;
     }
 
-    public void setWork_orderPDF(String work_orderPDF) {
-        this.work_orderPDF = work_orderPDF;
+    public String getComments() {
+        return comments;
+    }
+
+    public void setComments(String comments) {
+        this.comments = comments;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public LocalDate getDate() {
+        return date;
+    }
+
+    public void setAssignedDate(LocalDate date) {
+        this.date = date;
     }
 
 

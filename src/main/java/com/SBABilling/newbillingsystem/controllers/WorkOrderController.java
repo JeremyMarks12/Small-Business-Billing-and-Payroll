@@ -26,7 +26,7 @@ public class WorkOrderController {
     @Autowired
     private WorkerService workerService;
 
-    private final String uploadDirectory = "C:/uploads"; // ✅ Update this path to where you want PDFs saved
+    private final String uploadDirectory = "C:/uploads";
 
     @PostMapping("/add")
     public ResponseEntity<String> uploadWorkOrder(

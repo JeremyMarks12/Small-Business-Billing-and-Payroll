@@ -13,7 +13,7 @@ const AdminHomePage = () => {
 
     const menuItems = [
         { label: 'Assign Work', path: '/admin/assign' },
-        { label: 'View Completed Work', path: '/admin/completed' },
+        { label: 'View Completed Work', path: '/admin/viewwork' },
         { label: 'Companies', path: '/admin/companies' },
         { label: 'Inspector Profiles', path: '/admin/inspectors' },
         { label: 'Billing', path: '/admin/billing' },
