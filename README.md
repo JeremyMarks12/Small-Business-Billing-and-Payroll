@@ -104,7 +104,10 @@ setting up the project:
 					C:\...\Java\jdk-23\bin
 
 	install react dependencies:
-		open the ide command terminal, change the path to the sbafrontend folder and run the command: npm install @mui/icons-material
+		open the ide command terminal, change the path to the sbafrontend folder and run the commands: 
+			npm install @mui/icons-material
+			npm install @mui/material@6.4.11 @mui/icons-material@6.14.0 @mui/x-date-pickers@6.10.0 @mui/base@5.0.0-alpha.87 @emotion/react@11.14.0 @emotion/styled@11.14.0 dayjs --legacy-peer-deps
+			npm install axios @mui/x-date-pickers@6.10.0 dayjs --legacy-peer-deps
 	
 	
 	
