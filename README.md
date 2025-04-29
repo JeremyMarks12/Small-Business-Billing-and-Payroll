@@ -81,15 +81,15 @@ setting up the project:
 						C:\...\Maven\apache-maven-3.9.9\bin
 	
 	Downloading a local copy of the github repository (eclipse as IDE example)
-	clone the repository into your IDE program
-		with your eclipse, you perform: 
-			window->show view->other...->git->git repositories
-			use the url: [redacted]
-			when entering the username and password, you may have to use a personal access token instead of your GitHub password.
-			after which you will import the file
-				file->import->git->projects from git->existing local repository
-					select the cloned repository and hit 'finish'
-			when the project is imported and can be found in the 'package explorer'
+		clone the repository into your IDE program
+			with your eclipse, you perform: 
+				window->show view->other...->git->git repositories
+				use the url: https://github.com/JeremyMarks12/Small-Business-Billing-and-Payroll.git
+				when entering the username and password, you may have to use a personal access token instead of your GitHub password.
+				after which you will import the file
+					file->import->git->projects from git->existing local repository
+						select the cloned repository and hit 'finish'
+				when the project is imported and can be found in the 'package explorer'
 				
 				in the project explorer window, right click on the root folder and click maven->convert to maven project
 
