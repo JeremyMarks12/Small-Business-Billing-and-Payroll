@@ -1,0 +1,23 @@
+package com.SBA.BillingSystem.dto;
+
+public class LoginResponse {
+    private Integer workerID;
+    private String workerUser;
+    private String workerFName;
+    private String workerLName;
+    private boolean admin;
+
+    public LoginResponse(Integer workerID, String workerUser, String workerFName, String workerLName, boolean admin) {
+        this.workerID = workerID;
+        this.workerUser = workerUser;
+        this.workerFName = workerFName;
+        this.workerLName = workerLName;
+        this.admin = admin;
+    }
+
+    public Integer getWorkerID() { return workerID; }
+    public String getWorkerUser() { return workerUser; }
+    public String getWorkerFName() { return workerFName; }
+    public String getWorkerLName() { return workerLName; }
+    public boolean isAdmin() { return admin; }
+}

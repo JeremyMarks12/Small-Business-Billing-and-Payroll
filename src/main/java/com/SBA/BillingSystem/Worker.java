@@ -83,7 +83,7 @@ public class Worker {
 
 
     public boolean isAdmin() {
-        return isAdmin;
+        return Boolean.TRUE.equals(isAdmin);
     }
     
 
