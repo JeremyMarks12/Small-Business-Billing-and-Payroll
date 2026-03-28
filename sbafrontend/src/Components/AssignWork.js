@@ -25,17 +25,30 @@ const AssignWork = () => {
   useEffect(() => {
     fetchInspectors();
   }, []);
+  
+  //Normalize worker to automatically route database IDs
+  const normalizeWorker = (worker) => ({
+	workerID: worker.workID ?? worker.workerid,
+	firstName: worker.firstName ?? worker.workerFName?? worker.workerfname ?? '',
+	lastName: worker.lastName ?? worker.workerLName ?? worker.workerlname ?? '',
+	username: worker.username ?? worker.workerUser ?? worker.worker_user ?? '',
+	admin: worker.admin ?? worker.isAdmin ?? worker.is_admin ?? false,
+  });
 
   const fetchInspectors = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:8080/worker/getAll');
+      const response = await fetch('http://localhost:8080/workers');
       const data = await response.json();
-      
-      // Filter out admin accounts and specifically the system admin account
-      const inspectorsOnly = data.filter(worker => 
-        !worker.isAdmin && worker.username !== SYSTEM_ADMIN_USERNAME
-      );
+	  console.log("assignWork data:", data);	//New
+	  
+	  // map normalizeWorkers with normalizedWorkers
+	  const normalizedWorkers = data.map(normalizeWorker);
+	  console.log('assignWork normalized data:', normalizedWorkers);
+	  
+	  const inspectorsOnly = normalizedWorkers.filter(
+		(worker) => worker.admin === false && worker.username !== SYSTEM_ADMIN_USERNAME
+		);
       
       // Sort inspectors alphabetically by firstName then lastName
       const sortedInspectors = inspectorsOnly.sort((a, b) => {

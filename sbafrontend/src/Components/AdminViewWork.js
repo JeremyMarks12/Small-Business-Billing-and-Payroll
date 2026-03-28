@@ -15,9 +15,22 @@ const AdminViewWork = () => {
     try {
       const response = await fetch('http://localhost:8080/worker/getwoitems');
       const data = await response.json();
-      setWoItems(data);
+
+      console.log("RAW DATA:", data);
+
+      // Updated
+      if (Array.isArray(data)) {
+        setWoItems(data);
+      } else if (Array.isArray(data.content)) {
+        setWoItems(data.content);
+      } else {
+        console.error("Unexpected data shape:", data);
+        setWoItems([]); // fallback so .map doesn't crash
+      }
+
     } catch (error) {
       console.error('Error fetching WOItems:', error);
+      setWoItems([]); // prevents crash
     }
   };
 

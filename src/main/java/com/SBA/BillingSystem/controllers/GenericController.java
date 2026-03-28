@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/{entity}")
+@RequestMapping("/api/generic/{entity}")
 public class GenericController<T, ID> {
 
 	private final GenericService<T, ID> service;

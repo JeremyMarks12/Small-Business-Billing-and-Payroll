@@ -47,6 +47,8 @@ const InspectorProfiles = () => {
         message: '',
         severity: 'success'
     });
+	
+
 
     // Define system admin username - this account cannot be deleted or modified and won't be displayed
     const SYSTEM_ADMIN_USERNAME = "admin"; // Replace with your actual system admin username
@@ -68,16 +70,29 @@ const InspectorProfiles = () => {
 
     const fetchWorkers = async () => {
         try {
-            const response = await fetch('http://localhost:8080/worker/getAll');
+            const response = await fetch('http://localhost:8080/workers');
             const data = await response.json();
 
+			console.log("Workers from backend:", data);
+			console.log("FULL RESPONSE:", data);
+			console.log("Is array?", Array.isArray(data));
+			
             // Filter out system admin from both lists
-            const adminList = data.filter(worker => 
-                worker.admin === true && worker.username !== SYSTEM_ADMIN_USERNAME
-            );
-            const inspectorList = data.filter(worker => 
-                worker.admin === false && worker.username !== SYSTEM_ADMIN_USERNAME
-            );
+			const normalizedWorkers = data.map(worker => ({
+				workerID: worker.workerID,
+				firstName: worker.firstName || worker.workerFName || '',
+				lastName: worker.lastName || worker.workerLName || '',
+				username: worker.username || worker.workerUser || '',
+				admin: worker.admin ?? worker.isAdmin ?? false
+			}));
+			
+			const adminList = normalizedWorkers.filter(worker => 
+			    worker.admin === true && worker.username !== SYSTEM_ADMIN_USERNAME
+			);
+
+			const inspectorList = normalizedWorkers.filter(worker => 
+			    worker.admin === false && worker.username !== SYSTEM_ADMIN_USERNAME
+			);
 
             // Sort both lists alphabetically
             setAdmins(sortWorkers(adminList));
