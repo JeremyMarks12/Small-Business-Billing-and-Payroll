@@ -21,9 +21,10 @@ const CompanyProfiles = () => {
     severity: 'success'
   });
   const [companyForm, setCompanyForm] = useState({
-    name: '',
-    address: '',
-    phoneNumber: ''
+    companyName: '',
+    companyAddress: '',
+    companyPhone: '',
+    companyEmail: ''
   });
 
   useEffect(() => {
@@ -37,7 +38,7 @@ const CompanyProfiles = () => {
       const data = await response.json();
       
       // Sort companies alphabetically by name
-      const sortedCompanies = data.sort((a, b) => a.name.localeCompare(b.name));
+      const sortedCompanies = data.sort((a, b) => a.companyName.localeCompare(b.companyName));
       
       setCompanies(sortedCompanies);
     } catch (err) {
@@ -47,7 +48,12 @@ const CompanyProfiles = () => {
   };
 
   const handleOpenAddDialog = () => {
-    setCompanyForm({ name: '', address: '', phoneNumber: '' });
+    setCompanyForm({
+      companyName: '',
+      companyAddress: '',
+      companyPhone: '',
+      companyEmail: ''
+    });
     setEditMode(false);
     setPasswordConfirm('');
     setPasswordError('');
@@ -57,9 +63,10 @@ const CompanyProfiles = () => {
   const handleOpenViewDialog = (company) => {
     setSelectedCompany(company);
     setCompanyForm({
-      name: company.name,
-      address: company.address,
-      phoneNumber: company.phoneNumber
+      companyName: company.companyName,
+      companyAddress: company.companyAddress,
+      companyPhone: company.companyPhone,
+      companyEmail: company.companyEmail
     });
     setEditMode(false);
     setPasswordConfirm('');
@@ -70,7 +77,12 @@ const CompanyProfiles = () => {
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setSelectedCompany(null);
-    setCompanyForm({ name: '', address: '', phoneNumber: '' });
+    setCompanyForm({
+      companyName: '',
+      companyAddress: '',
+      companyPhone: '',
+      companyEmail: ''
+    });
     setEditMode(false);
     setPasswordConfirm('');
     setPasswordError('');
@@ -165,7 +177,7 @@ const CompanyProfiles = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/companies/${selectedCompany.id}`, {
+      const response = await fetch(`http://localhost:8080/companies/${selectedCompany.companyID}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(companyForm),
@@ -188,7 +200,7 @@ const CompanyProfiles = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/companies/${selectedCompany.id}`, {
+      const response = await fetch(`http://localhost:8080/companies/${selectedCompany.companyID}`, {
         method: 'DELETE',
       });
 
@@ -210,13 +222,13 @@ const CompanyProfiles = () => {
       </Typography>
       <Grid container spacing={2}>
         {companies.map((company) => (
-          <Grid item xs={12} sm={6} md={4} lg={2} key={company.id}>
+          <Grid item xs={12} sm={6} md={4} lg={2} key={company.companyID}>
             <Paper
               elevation={3}
               sx={{ p: 2, textAlign: 'center', cursor: 'pointer' }}
               onClick={() => handleOpenViewDialog(company)}
             >
-              {company.name}
+              {company.companyName}
             </Paper>
           </Grid>
         ))}
@@ -239,8 +251,8 @@ const CompanyProfiles = () => {
         <DialogContent>
           <TextField
             label="Company Name"
-            name="name"
-            value={companyForm.name}
+            name="companyName"
+            value={companyForm.companyName}
             onChange={handleFormChange}
             fullWidth
             margin="dense"
@@ -248,8 +260,8 @@ const CompanyProfiles = () => {
           />
           <TextField
             label="Address"
-            name="address"
-            value={companyForm.address}
+            name="companyAddress"
+            value={companyForm.companyAddress}
             onChange={handleFormChange}
             fullWidth
             margin="dense"
@@ -257,8 +269,17 @@ const CompanyProfiles = () => {
           />
           <TextField
             label="Phone Number"
-            name="phoneNumber"
-            value={companyForm.phoneNumber}
+            name="companyPhone"
+            value={companyForm.companyPhone}
+            onChange={handleFormChange}
+            fullWidth
+            margin="dense"
+            disabled={!editMode && selectedCompany}
+          />
+          <TextField
+            label="Email"
+            name="companyEmail"
+            value={companyForm.companyEmail}
             onChange={handleFormChange}
             fullWidth
             margin="dense"

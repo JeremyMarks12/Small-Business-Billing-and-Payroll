@@ -14,11 +14,13 @@ import AdminViewWork from './Components/AdminViewWork';
 import CompanyProfiles from './Components/CompanyProfiles';
 import InspectorProfiles from './Components/InspectorProfiles';
 import ProfileTab from './Components/ProfileTab';
+import WorkOrderFunctions from './Components/WorkOrderFunctions';
 
 // Worker pages
 import HomePage from './Components/HomePage';
 import InspectorAssignedWork from './Components/InspectorAssignedWork';
 import InspectorBillingPage from './Components/InspectorBillingPage';
+
 
 function App() {
   return (
@@ -42,6 +44,7 @@ function App() {
               <Route path="companies" element={<CompanyProfiles />} />
               <Route path="inspectors" element={<InspectorProfiles />} />
               <Route path="profile" element={<ProfileTab />} />
+			  <Route path="workorders" element={<WorkOrderFunctions />} />
               <Route path="*" element={<Navigate to="/admin" replace />} />
             </Route>
           </Route>

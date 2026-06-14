@@ -40,4 +40,10 @@ public class workOrderController {
     public void deleteWorkOrder(@PathVariable Integer id) {
         workOrderService.deleteById(id);
     }
+    
+    //Added
+    @GetMapping("/count")
+    public long getWorkOrderCount() {
+        return workOrderService.findAll().size();
+    }
 }

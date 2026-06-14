@@ -2,8 +2,6 @@ package com.SBA.BillingSystem;
 
 import jakarta.persistence.*;
 
-
-
 @Entity
 @Table(name = "company")
 public class Company {
@@ -49,6 +47,22 @@ public class Company {
 
 	public void setCompanyID(int companyID) {
 		this.companyID = companyID;
+	}
+	
+	public void setCompanyName(String companyName) {
+		this.companyName = companyName;
+	}
+	
+	public void setCompanyAddress(String companyAddress) {
+		this.companyAddress = companyAddress;
+	}
+	
+	public void setCompanyPhone(int companyPhone) {
+		this.companyPhone = companyPhone;
+	}
+	
+	public void setCompanyEmail(String companyEmail) {
+		this.companyEmail = companyEmail;
 	}
 
 }
