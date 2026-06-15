@@ -2,6 +2,8 @@ package com.SBA.BillingSystem;
 
 import jakarta.persistence.*;
 
+// **** Redundant class. Delete and incorporate into regular work order class.
+// **** Depreciated
 
 @Entity
 @Table(name = "completedWO")

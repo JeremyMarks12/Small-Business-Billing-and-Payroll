@@ -41,7 +41,7 @@ public class workOrderController {
         workOrderService.deleteById(id);
     }
     
-    //Added
+    //Added for counting sake. Might delete as it is redundant since we can already get a list of work orders.
     @GetMapping("/count")
     public long getWorkOrderCount() {
         return workOrderService.findAll().size();
