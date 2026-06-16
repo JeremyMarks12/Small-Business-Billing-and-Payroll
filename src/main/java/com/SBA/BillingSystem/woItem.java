@@ -5,17 +5,43 @@ import jakarta.persistence.*;
 
 
 @Entity
-@Table(name = "woItems")
-public class woItems {
+@Table(name = "woItem")
+public class woItem {
 	
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) //AutoGenerates an ID
-	private int woItemsID;
-	private String woItems;
+	private int woItemID;
+	private String woItem;
 	private int woItemQty;
 	private double woItemPrice;
 	private int workerID;
 	private int workOrderID;
+	private int companyID;
+
+	public woItem() {
+	}
+	
+	public woItem(int woItemID, 
+			String woItem, 
+			int woItemQty, 
+			double woItemPrice, 
+			int workerID, 
+			int workOrderID, 
+			int companyID,
+			String work_orderPDF) 
+	{
+		this.woItemID = woItemID;
+		this.woItem = woItem;
+		this.woItemQty = woItemQty;
+		this.woItemPrice = woItemPrice;
+		this.workerID = workerID;
+		this.workOrderID = workOrderID;
+		this.companyID = companyID;
+
+	}
+	
+	// Organize!
+	
 	public int getWorkOrderID() {
 		return workOrderID;
 	}
@@ -24,38 +50,22 @@ public class woItems {
 		this.workOrderID = workOrderID;
 	}
 
-	private int companyID;
-	private String work_orderPDF;	// This should be an a file type... Fix as needed.
+
+	public int getwoItemID() {
+		return woItemID;
+	}
+
+	public void setwoItemID(int woItemID) {
+		this.woItemID = woItemID;
+	}
+
+	public String getwoItem() {
+		return woItem;
+	}
 	
-	public woItems() {
-	}
-	
-	public woItems(int woItemsID, String woItems, int woItemQty, double woItemPrice, int workerID, int workOrderID, int companyID,
-			String work_orderPDF) {
-		this.woItemsID = woItemsID;
-		this.woItems = woItems;
-		this.woItemQty = woItemQty;
-		this.woItemPrice = woItemPrice;
-		this.workerID = workerID;
-		this.workOrderID = workOrderID;
-		this.companyID = companyID;
-		this.work_orderPDF = work_orderPDF;
-	}
 
-	public int getwoItemsID() {
-		return woItemsID;
-	}
-
-	public void setwoItemsID(int woItemsID) {
-		this.woItemsID = woItemsID;
-	}
-
-	public String getWoItems() {
-		return woItems;
-	}
-
-	public void setWoItems(String woItems) {
-		this.woItems = woItems;
+	public void setwoItem(String woItem) {
+		this.woItem = woItem;
 	}
 
 	public int getWoItemQty() {
@@ -89,15 +99,5 @@ public class woItems {
 	public void setCompanyID(int companyID) {
 		this.companyID = companyID;
 	}
-
-	public String getWork_orderPDF() {
-		return work_orderPDF;
-	}
-
-	public void setWork_orderPDF(String work_orderPDF) {
-		this.work_orderPDF = work_orderPDF;
-	}
-	
-	
 
 }

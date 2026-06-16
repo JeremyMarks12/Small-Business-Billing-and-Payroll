@@ -100,27 +100,6 @@ public class Worker {
         System.out.println("Sucessfully logged out.");
     }
 
-    public double calculatePay() {
-        double totalPay = 0;
-        return totalPay;
-    }
-
-    public void viewAssignedWork() {
-        // Allows the worker to view all of the work order in their drop box.
-    }
-
-    public void enterBillingDetails() {
-        // Allows the worker to enter in the billing details.
-    }
-
-    public void downloadWorkOrder() {
-        // Allows the worker to download the PDF of the work order file.
-    }
-
-    public void workerExport() {
-
-    }
-
 
 
 

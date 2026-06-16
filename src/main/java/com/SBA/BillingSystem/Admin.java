@@ -2,6 +2,8 @@ package com.SBA.BillingSystem;
 
 import java.util.*;
 
+// Redundant class. Delete. Admin privileges are already checked in the Worker class.
+
 
 public class Admin extends Worker {
 

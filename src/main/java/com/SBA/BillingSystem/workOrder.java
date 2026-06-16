@@ -18,7 +18,7 @@ public class workOrder {
     private int companyID;
     
     @Column
-    private String workOrderPDF;
+    private String workOrderPDF;	// This should be an a file type... Fix as needed.
     
     // Added
     @Column(name = "status")
@@ -33,7 +33,10 @@ public class workOrder {
     @Column(name = "endDateTime")
     private LocalDateTime endDateTime;
     
-    
+    // Added
+    @Column(name = "comment")
+	private String comment;
+	
 	public workOrder() {
 	}
 	
@@ -43,7 +46,8 @@ public class workOrder {
 			String workOrderPDF, 
 			WorkOrderStatus status, 
 			LocalDateTime startDateTime, 
-			LocalDateTime endDateTime) 
+			LocalDateTime endDateTime,
+			String comment) 
 	{
 		this.workOrderID = workOrderID;
 		this.workerID = workerID;
@@ -52,6 +56,7 @@ public class workOrder {
 		this.status = status;	//Added
 		this.startDateTime = startDateTime;	//Added
 		this.endDateTime = endDateTime;	//Added
+		this.comment = comment;	//Added
 		
 	}
 	
@@ -110,6 +115,14 @@ public class workOrder {
 	
 	public LocalDateTime getEndDateTime() {
 		return endDateTime;
+	}
+
+	public String getComment() {
+		return comment;
+	}
+
+	public void setComment(String comment) {
+		this.comment = comment;
 	}
 
 }
