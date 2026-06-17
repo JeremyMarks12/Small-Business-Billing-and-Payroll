@@ -4,18 +4,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import com.SBA.BillingSystem.services.workerService;
-import com.SBA.BillingSystem.services.workOrderService;
+import com.SBA.BillingSystem.services.WorkerService;
+import com.SBA.BillingSystem.services.WorkOrderService;
 import java.util.List;
 
 @SpringBootApplication
 public class BillingSystemApplication implements CommandLineRunner {
 
     @Autowired
-    private workerService workerService; // Worker service for fetching workers
+    private WorkerService workerService; // Worker service for fetching workers
 
     @Autowired
-    private workOrderService workOrderService; // WorkOrder service for fetching work orders
+    private WorkOrderService workOrderService; // WorkOrder service for fetching work orders
 
     public static void main(String[] args) {
         SpringApplication.run(BillingSystemApplication.class, args);
@@ -44,15 +44,14 @@ public class BillingSystemApplication implements CommandLineRunner {
 
         // Print all Work Orders
         System.out.println("\n====== List of Work Orders ======");
-        List<workOrder> workOrders = workOrderService.findAll();
+        List<WorkOrder> workOrders = workOrderService.findAll();
         if (workOrders.isEmpty()) {
             System.out.println("No work orders found in the database.");
         } else {
-            for (workOrder workOrder : workOrders) {
+            for (WorkOrder workOrder : workOrders) {
                 System.out.println("Work Order ID: " + workOrder.getWorkOrderID());
-                System.out.println("Worker ID: " + workOrder.getWOWorkerID());
-                System.out.println("Company ID: " + workOrder.getWOCompanyID());
-                System.out.println("PDF File: " + workOrder.getWorkOrderPDF());
+                System.out.println("Worker ID: " + workOrder.getWorkerID());
+                System.out.println("Company ID: " + workOrder.getCompanyID());
                 System.out.println("----------------------------------");
             }
         }

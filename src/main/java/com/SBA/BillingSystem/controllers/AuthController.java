@@ -3,7 +3,7 @@ package com.SBA.BillingSystem.controllers;
 import com.SBA.BillingSystem.Worker;
 import com.SBA.BillingSystem.dto.LoginRequest;
 import com.SBA.BillingSystem.dto.LoginResponse;
-import com.SBA.BillingSystem.services.workerService;
+import com.SBA.BillingSystem.services.WorkerService;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,10 +17,10 @@ import java.util.Map;
 @RequestMapping("/auth")
 public class AuthController {
 
-    private final workerService workerService;
+    private final WorkerService workerService;
     private final PasswordEncoder passwordEncoder;
 
-    public AuthController(workerService workerService, PasswordEncoder passwordEncoder) {
+    public AuthController(WorkerService workerService, PasswordEncoder passwordEncoder) {
         this.workerService = workerService;
         this.passwordEncoder = passwordEncoder;
     }

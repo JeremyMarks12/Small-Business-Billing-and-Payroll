@@ -1,7 +1,7 @@
 package com.SBA.BillingSystem.config;
 
 import com.SBA.BillingSystem.Worker;
-import com.SBA.BillingSystem.repositories.workerRepository; // adjust package name
+import com.SBA.BillingSystem.repositories.WorkerRepository; // adjust package name
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -11,10 +11,10 @@ import java.util.List;
 @Component
 public class PasswordMigrationRunner implements CommandLineRunner {
 
-    private final workerRepository repo;
+    private final WorkerRepository repo;
     private final PasswordEncoder encoder;
 
-    public PasswordMigrationRunner(workerRepository repo, PasswordEncoder encoder) {
+    public PasswordMigrationRunner(WorkerRepository repo, PasswordEncoder encoder) {
         this.repo = repo;
         this.encoder = encoder;
     }

@@ -1,13 +1,12 @@
 package com.SBA.BillingSystem;
 
 import java.time.LocalDateTime;
-import com.SBA.BillingSystem.WorkOrderStatus;
 
 // A summary page for the front end to pull up so it is not constantly searching for the items. Not a query table!
 
 public class WorkOrderSummaryDTO {
 	
-	private int WorkOrderID;
+	private int workOrderID;
 	private String companyName;
 	private String workerName;
 	private String workAddress;
@@ -18,11 +17,10 @@ public class WorkOrderSummaryDTO {
 	private double totalPrice;
 	private int fileNo;
 	
-	public WorkOrderSummaryDTO() {
-	}
+	public WorkOrderSummaryDTO() {}
 	
 	public WorkOrderSummaryDTO(
-			int WorkOrderID,
+			int workOrderID,
 			String companyName,
 			String workerName,
 			String workAddress,
@@ -33,7 +31,7 @@ public class WorkOrderSummaryDTO {
 			double totalPrice,
 			int fileNo) 
 	{
-		this.WorkOrderID = WorkOrderID;
+		this.workOrderID = workOrderID;
 		this.setCompanyName(companyName);
 		this.setWorkerName(workerName);
 		this.setWorkAddress(workAddress);
@@ -46,86 +44,76 @@ public class WorkOrderSummaryDTO {
 		
 	}
 
-	public int getWorkOrderID() {
-		return WorkOrderID;
+	public int getworkOrderID() {
+		return workOrderID;
 	}
-
-	public void setWorkOrderID(int WorkOrderID) {
-		this.WorkOrderID = WorkOrderID;
-	}
-
 	public String getCompanyName() {
 		return companyName;
-	}
-
-	public void setCompanyName(String companyName) {
-		this.companyName = companyName;
 	}
 
 	public String getWorkerName() {
 		return workerName;
 	}
-
-	public void setWorkerName(String workerName) {
-		this.workerName = workerName;
-	}
-
 	public String getWorkAddress() {
 		return workAddress;
 	}
-
-	public void setWorkAddress(String workAddress) {
-		this.workAddress = workAddress;
-	}
-
 	public WorkOrderStatus getStatus() {
 		return status;
+	}
+	public LocalDateTime getStartDateTime() {
+		return startDateTime;
+	}
+	public LocalDateTime getEndDateTime() {
+		return endDateTime;
+	}
+	
+	public String getComment() {
+		return comment;
+	}
+	public double getTotalPrice() {
+		return totalPrice;
+	}
+	public int getFileNo() {
+		return fileNo;
+	}
+	
+	public void setworkOrderID(int workOrderID) {
+		this.workOrderID = workOrderID;
+	}
+	
+	public void setCompanyName(String companyName) {
+		this.companyName = companyName;
+	}
+	
+	public void setWorkerName(String workerName) {
+		this.workerName = workerName;
+	}
+	
+	public void setWorkAddress(String workAddress) {
+		this.workAddress = workAddress;
 	}
 
 	public void setStatus(WorkOrderStatus status) {
 		this.status = status;
 	}
 
-	public LocalDateTime getStartDateTime() {
-		return startDateTime;
-	}
-
 	public void setStartDateTime(LocalDateTime startDateTime) {
 		this.startDateTime = startDateTime;
-	}
-
-	public LocalDateTime getEndDateTime() {
-		return endDateTime;
 	}
 
 	public void setEndDateTime(LocalDateTime endDateTime) {
 		this.endDateTime = endDateTime;
 	}
 
-	public String getComment() {
-		return comment;
-	}
-
 	public void setComment(String comment) {
 		this.comment = comment;
-	}
-
-	public double getTotalPrice() {
-		return totalPrice;
 	}
 
 	public void setTotalPrice(double totalPrice) {
 		this.totalPrice = totalPrice;
 	}
 
-	public int getFileNo() {
-		return fileNo;
-	}
-
 	public void setFileNo(int fileNo) {
 		this.fileNo = fileNo;
 	}
-
-
-
 }

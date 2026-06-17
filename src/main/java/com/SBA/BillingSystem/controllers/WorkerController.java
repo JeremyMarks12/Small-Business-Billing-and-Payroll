@@ -2,42 +2,42 @@ package com.SBA.BillingSystem.controllers;
 
 import org.springframework.web.bind.annotation.*;
 import com.SBA.BillingSystem.Worker;
-import com.SBA.BillingSystem.services.workerService;
+import com.SBA.BillingSystem.services.WorkerService;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/workers")
-public class workerController {
+public class WorkerController {
 
-    private final workerService workerService;
+    private final WorkerService WorkerService;
 
-    public workerController(workerService workerService) {
-        this.workerService = workerService;
+    public WorkerController(WorkerService WorkerService) {
+        this.WorkerService = WorkerService;
     }
 
     @GetMapping
     public List<Worker> getAllWorkers() {
-        return workerService.findAll();
+        return WorkerService.findAll();
     }
 
     @GetMapping("/{id}")
     public Worker getWorkerById(@PathVariable Integer id) {
-        return workerService.findById(id).orElse(null);
+        return WorkerService.findById(id).orElse(null);
     }
 
     @GetMapping("/username/{username}")
     public Worker getWorkerByUsername(@PathVariable String username) {
-        return workerService.findByUsername(username);
+        return WorkerService.findByUsername(username);
     }
 
     @PostMapping
     public Worker addWorker(@RequestBody Worker worker) {
-        return workerService.save(worker);
+        return WorkerService.save(worker);
     }
 
     @DeleteMapping("/{id}")
     public void deleteWorker(@PathVariable Integer id) {
-        workerService.deleteById(id);
+    	WorkerService.deleteById(id);
     }
 }
