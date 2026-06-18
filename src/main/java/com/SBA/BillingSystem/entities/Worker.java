@@ -1,26 +1,33 @@
-package com.SBA.BillingSystem;
+package com.SBA.BillingSystem.entities;
 
 import jakarta.persistence.*; // Defines how objects will map to the DB
 
 @Entity
-@Table(name = "Worker") // Maps the worker class to the worker table in the DB
+@Table(name = "worker") // Maps the worker class to the worker table in the DB
 public class Worker {
 	
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) //AutoGenerates an ID
     private int workerID;
 
+    @Column(name = "worker_first_name")
     private String workerFName;
+
+    @Column(name = "worker_last_name")
     private String workerLName;
+
+    @Column(name = "worker_username", unique = true)
     private String workerUser;
+
+    @Column(name = "worker_password")
     private String workerPW;
-    private Boolean isAdmin;
+    
+    private boolean isAdmin;
 
     public Worker() {}
 
-    public Worker(int workerID, String workerFName, String workerLName, String workerUser, String workerPW, boolean isAdmin) 
+    public Worker(String workerFName, String workerLName, String workerUser, String workerPW, boolean isAdmin) 
     {
-        this.workerID = workerID;
         this.workerFName = workerFName;
         this.workerLName = workerLName;
         this.workerUser = workerUser;
@@ -29,11 +36,11 @@ public class Worker {
     }
 
 
-    public String getworkerFName() {
+    public String getWorkerFName() {
         return workerFName;
     }
     
-    public String getworkerPW() {
+    public String getWorkerPW() {
         return workerPW;
     }
     
@@ -41,7 +48,7 @@ public class Worker {
         return workerID;
     }
     
-    public String getworkerLName() {
+    public String getWorkerLName() {
         return workerLName;
     }
     
@@ -50,7 +57,7 @@ public class Worker {
 	}
 
 
-    public void setworkerFName(String workerFName) {
+    public void setWorkerFName(String workerFName) {
         this.workerFName = workerFName;
     }
 
@@ -60,12 +67,12 @@ public class Worker {
     }
 
 
-    public void setworkerLName(String workerLName) {
+    public void setWorkerLName(String workerLName) {
         this.workerLName = workerLName;
     }
 
 
-    public void setworkerPW(String workerPW) {
+    public void setWorkerPW(String workerPW) {
         this.workerPW = workerPW;
     }
     
@@ -82,23 +89,5 @@ public class Worker {
     public void setAdmin(boolean isAdmin) {
         this.isAdmin = isAdmin;
     }
-
-//    public void login(String workerPW, String workerPW) {
-//        // Logic for parsing db to match the workerPW and workerPW to worker.
-//    }
-
-    public void logout() {
-        // Logic for logging out of the system.
-        System.out.println("Sucessfully logged out.");
-    }
-
-
-
-
-
-
-
-
-
 
 }

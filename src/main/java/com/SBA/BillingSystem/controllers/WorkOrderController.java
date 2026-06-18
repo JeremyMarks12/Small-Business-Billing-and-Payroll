@@ -1,7 +1,8 @@
 package com.SBA.BillingSystem.controllers;
 
 import org.springframework.web.bind.annotation.*;
-import com.SBA.BillingSystem.WorkOrder;
+
+import com.SBA.BillingSystem.entities.WorkOrder;
 import com.SBA.BillingSystem.services.WorkOrderService;
 
 import java.util.List;

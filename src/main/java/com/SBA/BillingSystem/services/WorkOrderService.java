@@ -1,8 +1,9 @@
 package com.SBA.BillingSystem.services;
 
 import org.springframework.stereotype.Service;
+
+import com.SBA.BillingSystem.entities.WorkOrder;
 import com.SBA.BillingSystem.repositories.WorkOrderRepository;
-import com.SBA.BillingSystem.WorkOrder;
 
 @Service
 public class WorkOrderService extends GenericService<WorkOrder, Integer> {

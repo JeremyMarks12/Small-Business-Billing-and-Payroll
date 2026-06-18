@@ -1,4 +1,4 @@
-package com.SBA.BillingSystem;
+package com.SBA.BillingSystem.tests;
 
 import java.sql.*;
 

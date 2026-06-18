@@ -1,6 +1,8 @@
-package com.SBA.BillingSystem;
+package com.SBA.BillingSystem.dto;
 
 import java.time.LocalDateTime;
+
+import com.SBA.BillingSystem.enums.WorkOrderStatus;
 
 // A summary page for the front end to pull up so it is not constantly searching for the items. Not a query table!
 

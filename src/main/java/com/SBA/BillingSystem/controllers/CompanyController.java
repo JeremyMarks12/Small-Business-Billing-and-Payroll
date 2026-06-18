@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
 
-import com.SBA.BillingSystem.Company;
+import com.SBA.BillingSystem.entities.Company;
 import com.SBA.BillingSystem.services.CompanyService;
 
 @RestController

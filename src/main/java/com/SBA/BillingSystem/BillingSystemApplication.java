@@ -5,6 +5,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import com.SBA.BillingSystem.services.WorkerService;
+import com.SBA.BillingSystem.entities.WorkOrder;
+import com.SBA.BillingSystem.entities.Worker;
 import com.SBA.BillingSystem.services.WorkOrderService;
 import java.util.List;
 
@@ -34,8 +36,8 @@ public class BillingSystemApplication implements CommandLineRunner {
         } else {
             for (Worker worker : workers) {
                 System.out.println("Worker ID: " + worker.getWorkerID());
-                System.out.println("First Name: " + worker.getworkerFName());
-                System.out.println("Last Name: " + worker.getworkerLName());
+                System.out.println("First Name: " + worker.getWorkerFName());
+                System.out.println("Last Name: " + worker.getWorkerLName());
                 System.out.println("Username: " + worker.getWorkerUser());
                 System.out.println("Admin Status: " + worker.isAdmin());
                 System.out.println("----------------------------------");
@@ -50,8 +52,8 @@ public class BillingSystemApplication implements CommandLineRunner {
         } else {
             for (WorkOrder workOrder : workOrders) {
                 System.out.println("Work Order ID: " + workOrder.getWorkOrderID());
-                System.out.println("Worker ID: " + workOrder.getWorkerID());
-                System.out.println("Company ID: " + workOrder.getCompanyID());
+                System.out.println("Worker ID: " + workOrder.getWorker().getWorkerID());
+                System.out.println("Company ID: " + workOrder.getCompany().getCompanyID());
                 System.out.println("----------------------------------");
             }
         }

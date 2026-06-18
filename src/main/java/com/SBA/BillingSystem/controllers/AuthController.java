@@ -1,8 +1,8 @@
 package com.SBA.BillingSystem.controllers;
 
-import com.SBA.BillingSystem.Worker;
 import com.SBA.BillingSystem.dto.LoginRequest;
 import com.SBA.BillingSystem.dto.LoginResponse;
+import com.SBA.BillingSystem.entities.Worker;
 import com.SBA.BillingSystem.services.WorkerService;
 
 import org.springframework.http.HttpStatus;
@@ -38,7 +38,7 @@ public class AuthController {
         }
 
         // IMPORTANT: this expects workerPW is stored as BCrypt hash in DB
-        if (!passwordEncoder.matches(req.getPassword(), w.getworkerPW())) {
+        if (!passwordEncoder.matches(req.getPassword(), w.getWorkerPW())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("message", "Invalid username or password"));
         }
@@ -46,8 +46,8 @@ public class AuthController {
         LoginResponse res = new LoginResponse(
                 w.getWorkerID(),
                 w.getWorkerUser(),
-                w.getworkerFName(),
-                w.getworkerLName(),
+                w.getWorkerFName(),
+                w.getWorkerLName(),
                 w.isAdmin()
         );
 

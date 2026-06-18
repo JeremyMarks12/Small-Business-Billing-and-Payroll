@@ -1,17 +1,22 @@
-package com.SBA.BillingSystem;
+package com.SBA.BillingSystem.entities;
 
 import java.time.LocalDateTime;
+
+import com.SBA.BillingSystem.enums.DocumentType;
+
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "workOrderDocument")
+@Table(name = "work_order_document")
 public class WorkOrderDocument {
 	
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int documentID;
 
-    private int workOrderID;
+    @ManyToOne
+    @JoinColumn(name = "work_order")
+    private WorkOrder workOrder;
 
     private String fileName;
 
@@ -25,7 +30,9 @@ public class WorkOrderDocument {
     @Column(nullable = false)
     private LocalDateTime uploadDateTime = LocalDateTime.now();
 
-    private int uploadedByWorkerID;
+    @ManyToOne
+    @JoinColumn(name = "uploaded_by_worker")
+    private Worker uploadedByWorker;
     
     @Column(nullable = false)
     private String mimeType;
@@ -34,23 +41,22 @@ public class WorkOrderDocument {
     
     public WorkOrderDocument() {}
     
-    public WorkOrderDocument(int documentID, 
-    		int workOrderID, 
+    public WorkOrderDocument(
+    		WorkOrder workOrder, 
     		String fileName, 
     		DocumentType documentType, 
     		byte[] documentData, 
     		LocalDateTime uploadDateTime, 
-    		int uploadedByWorkerID,
+    		Worker uploadedByWorker,
     		String mimeType,
     		long fileSize) 
     {
-    	this.documentID = documentID;
-    	this.workOrderID=workOrderID;
+    	this.workOrder=workOrder;
     	this.fileName=fileName;
     	this.documentType = documentType;
     	this.documentData = documentData;
     	this.uploadDateTime=uploadDateTime;
-    	this.uploadedByWorkerID=uploadedByWorkerID;
+    	this.uploadedByWorker=uploadedByWorker;
     	this.mimeType = mimeType;
     	this.fileSize=fileSize;
     	
@@ -60,8 +66,8 @@ public class WorkOrderDocument {
 		return documentID;
 	}
 	
-	public int getWorkOrderID() {
-		return workOrderID;
+	public WorkOrder getWorkOrder() {
+		return workOrder;
 	}
 	
 	public String getFileName() {
@@ -80,8 +86,8 @@ public class WorkOrderDocument {
 		return uploadDateTime;
 	}
 	
-	public int getUploadedByWorkerID() {
-		return uploadedByWorkerID;
+	public Worker getUploadedByWorker() {
+		return uploadedByWorker;
 	}
 	
 	public String getMimeType() {
@@ -96,8 +102,8 @@ public class WorkOrderDocument {
 		this.documentID = documentID;
 	}
 	
-	public void setWorkOrderID(int workOrderID) {
-		this.workOrderID = workOrderID;
+	public void setWorkOrder(WorkOrder workOrder) {
+		this.workOrder = workOrder;
 	}
 	public void setFileName(String fileName) {
 		this.fileName = fileName;
@@ -115,8 +121,8 @@ public class WorkOrderDocument {
 		this.uploadDateTime = uploadDateTime;
 	}
 
-	public void setUploadedByWorkerID(int uploadedByWorkerID) {
-		this.uploadedByWorkerID = uploadedByWorkerID;
+	public void setUploadedByWorkerID(Worker uploadedByWorker) {
+		this.uploadedByWorker = uploadedByWorker;
 	}
 	
 	public void setMimeType(String mimeType) {

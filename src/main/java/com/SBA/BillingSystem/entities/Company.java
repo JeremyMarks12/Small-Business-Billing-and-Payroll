@@ -1,4 +1,4 @@
-package com.SBA.BillingSystem;
+package com.SBA.BillingSystem.entities;
 
 import jakarta.persistence.*;
 
@@ -12,14 +12,14 @@ public class Company {
     
 	private String companyName;
 	private String companyAddress;
-	private int companyPhone;
+	private String companyPhone;
 	private String companyEmail;
 
 	public Company() {}
 
-	public Company(int companyID, String companyName, String companyAddress, int companyPhone, String companyEmail) 
+	public Company(String companyName, String companyAddress, String companyPhone, String companyEmail) 
 	{
-		this.companyID = companyID;
+		// CompanyID is automatically generated to allow many-to-one relations with the work order.
 		this.companyName = companyName;
 		this.companyAddress = companyAddress;
 		this.companyPhone = companyPhone;
@@ -38,7 +38,7 @@ public class Company {
 		return companyAddress;
 	}
 
-	public int getCompanyPhone() {
+	public String getCompanyPhone() {
 		return companyPhone;
 	}
 
@@ -58,7 +58,7 @@ public class Company {
 		this.companyAddress = companyAddress;
 	}
 	
-	public void setCompanyPhone(int companyPhone) {
+	public void setCompanyPhone(String companyPhone) {
 		this.companyPhone = companyPhone;
 	}
 	

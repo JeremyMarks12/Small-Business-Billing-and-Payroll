@@ -1,4 +1,4 @@
-package com.SBA.BillingSystem;
+package com.SBA.BillingSystem.enums;
 
 public enum DocumentType {
 	WORK_ORDER,

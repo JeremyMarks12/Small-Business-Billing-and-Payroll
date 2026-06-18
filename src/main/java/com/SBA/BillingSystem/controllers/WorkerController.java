@@ -1,7 +1,8 @@
 package com.SBA.BillingSystem.controllers;
 
 import org.springframework.web.bind.annotation.*;
-import com.SBA.BillingSystem.Worker;
+
+import com.SBA.BillingSystem.entities.Worker;
 import com.SBA.BillingSystem.services.WorkerService;
 
 import java.util.List;

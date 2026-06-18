@@ -1,7 +1,8 @@
 package com.SBA.BillingSystem.services;
 
 import org.springframework.stereotype.Service;
-import com.SBA.BillingSystem.WorkOrderItem;
+
+import com.SBA.BillingSystem.entities.WorkOrderItem;
 import com.SBA.BillingSystem.repositories.WOItemRepository;
 
 @Service

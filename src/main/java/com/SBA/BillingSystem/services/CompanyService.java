@@ -1,7 +1,8 @@
 package com.SBA.BillingSystem.services;
 
 import org.springframework.stereotype.Service;
-import com.SBA.BillingSystem.Company;
+
+import com.SBA.BillingSystem.entities.Company;
 import com.SBA.BillingSystem.repositories.CompanyRepository;
 
 @Service
