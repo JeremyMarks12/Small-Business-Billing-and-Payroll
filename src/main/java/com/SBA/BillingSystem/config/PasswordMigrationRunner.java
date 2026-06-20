@@ -8,30 +8,31 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Component
+//@Component
 public class PasswordMigrationRunner implements CommandLineRunner {
 
-    private final WorkerRepository repo;
+    private final WorkerRepository workerRepository;
     private final PasswordEncoder encoder;
 
-    public PasswordMigrationRunner(WorkerRepository repo, PasswordEncoder encoder) {
-        this.repo = repo;
+    public PasswordMigrationRunner(WorkerRepository workerRepository, PasswordEncoder encoder) {
+        this.workerRepository = workerRepository;
         this.encoder = encoder;
     }
 
     @Override
     public void run(String... args) {
         // If you can query admins specifically, do that. Otherwise filter in Java:
-        List<Worker> workers = repo.findAll();
+        List<Worker> workers = workerRepository.findAll();
 
         for (Worker w : workers) {
             String pw = w.getWorkerPW(); // your getter
+            
             if (pw == null) continue;
 
             boolean looksBcrypt = pw.startsWith("$2a$") || pw.startsWith("$2b$") || pw.startsWith("$2y$");
             if (!looksBcrypt) {
                 w.setWorkerPW(encoder.encode(pw));
-                repo.save(w);
+                workerRepository.save(w);
             }
         }
     }

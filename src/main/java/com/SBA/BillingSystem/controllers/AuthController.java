@@ -4,13 +4,11 @@ import com.SBA.BillingSystem.dto.LoginRequest;
 import com.SBA.BillingSystem.dto.LoginResponse;
 import com.SBA.BillingSystem.entities.Worker;
 import com.SBA.BillingSystem.services.WorkerService;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
+import java.util.*;
 
 @CrossOrigin(origins = "http://localhost:3000")
 @RestController
@@ -26,16 +24,18 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest req) {
-        if (req.getUsername() == null || req.getPassword() == null) {
+    public ResponseEntity<Object> login(@RequestBody LoginRequest req) {
+        if (req.getUsername() == null || req.getUsername().isBlank() || req.getPassword() == null || req.getPassword().isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("message", "Username and password are required"));
         }
 
-        Worker w = workerService.findByUsername(req.getUsername());
-        if (w == null) {
+        Optional<Worker> worker = workerService.findByUsername(req.getUsername().trim());
+        if (worker.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("message", "Invalid username or password"));
         }
+        
+        Worker w = worker.get();
 
         // IMPORTANT: this expects workerPW is stored as BCrypt hash in DB
         if (!passwordEncoder.matches(req.getPassword(), w.getWorkerPW())) {

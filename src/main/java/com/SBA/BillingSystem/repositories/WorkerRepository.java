@@ -1,10 +1,8 @@
 package com.SBA.BillingSystem.repositories;
 
-import org.springframework.stereotype.Repository;
-
+import java.util.Optional;
 import com.SBA.BillingSystem.entities.Worker;
 
-@Repository
 public interface WorkerRepository extends GenericRepository<Worker, Integer> {
-    Worker findByWorkerUser(String workerUser);
+    Optional<Worker> findByWorkerUserIgnoreCase(String workerUser);
 }
