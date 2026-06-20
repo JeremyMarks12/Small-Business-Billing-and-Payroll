@@ -6,51 +6,77 @@ import com.SBA.BillingSystem.entities.Worker;
 import com.SBA.BillingSystem.services.WorkerService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import java.util.*;
 
-@CrossOrigin(origins = "http://localhost:3000")
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
 
     private final WorkerService workerService;
-    private final PasswordEncoder passwordEncoder;
-
-    public AuthController(WorkerService workerService, PasswordEncoder passwordEncoder) {
+    private final AuthenticationManager authenticationManager;
+    
+    public AuthController(WorkerService workerService, AuthenticationManager authenticationManager) {
         this.workerService = workerService;
-        this.passwordEncoder = passwordEncoder;
+        this.authenticationManager = authenticationManager;
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Object> login(@RequestBody LoginRequest req) {
-        if (req.getUsername() == null || req.getUsername().isBlank() || req.getPassword() == null || req.getPassword().isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Username and password are required"));
+    public ResponseEntity<Object> login(@RequestBody LoginRequest req,HttpServletRequest request) {
+
+        if (req.getUsername() == null ||
+        		req.getUsername().isBlank() ||
+        		req.getPassword() == null ||
+        		req.getPassword().isBlank()) {
+
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "Username and password are required"));
         }
 
-        Optional<Worker> worker = workerService.findByUsername(req.getUsername().trim());
-        if (worker.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "Invalid username or password"));
+        try {
+            UsernamePasswordAuthenticationToken loginToken = new UsernamePasswordAuthenticationToken(req.getUsername().trim(),
+                            req.getPassword());
+
+            Authentication authentication = authenticationManager.authenticate(loginToken);
+
+            SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+
+            securityContext.setAuthentication(authentication);
+            SecurityContextHolder.setContext(securityContext);
+
+            HttpSession session = request.getSession(true);
+
+            session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,securityContext);
+
+            Optional<Worker> result =workerService.findByUsername(authentication.getName());
+
+            if (result.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+
+            Worker worker = result.get();
+
+            LoginResponse response = new LoginResponse(
+            		worker.getWorkerID(),
+            		worker.getWorkerUser(),
+            		worker.getWorkerFName(),
+            		worker.getWorkerLName(),
+            		worker.isAdmin());
+
+            return ResponseEntity.ok(response);
+
+        } catch (AuthenticationException exception) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message","Invalid username or password"));
         }
-        
-        Worker w = worker.get();
-
-        // IMPORTANT: this expects workerPW is stored as BCrypt hash in DB
-        if (!passwordEncoder.matches(req.getPassword(), w.getWorkerPW())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "Invalid username or password"));
-        }
-
-        LoginResponse res = new LoginResponse(
-                w.getWorkerID(),
-                w.getWorkerUser(),
-                w.getWorkerFName(),
-                w.getWorkerLName(),
-                w.isAdmin()
-        );
-
-        return ResponseEntity.ok(res);
     }
 }

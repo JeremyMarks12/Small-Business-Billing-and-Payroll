@@ -1,6 +1,7 @@
 package com.SBA.BillingSystem.entities;
 
 import jakarta.persistence.*; // Defines how objects will map to the DB
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
 @Table(name = "worker") // Maps the worker class to the worker table in the DB
@@ -19,6 +20,7 @@ public class Worker {
     @Column(name = "worker_username", unique = true)
     private String workerUser;
 
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(name = "worker_password")
     private String workerPW;
     

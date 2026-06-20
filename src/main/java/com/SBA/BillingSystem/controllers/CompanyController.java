@@ -9,7 +9,6 @@ import com.SBA.BillingSystem.services.CompanyService;
 
 @RestController
 @RequestMapping("/companies")
-@CrossOrigin(origins = "http://localhost:3000")
 public class CompanyController {
 
     private final CompanyService companyService;
