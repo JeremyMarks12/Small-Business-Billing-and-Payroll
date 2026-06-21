@@ -2,6 +2,7 @@ package com.SBA.BillingSystem.enums;
 
 public enum  WorkOrderStatus {
 	OPEN,
-	INPROCESS,
+	IN_PROCESS,
+	IN_REVIEW,
 	COMPLETE
 }

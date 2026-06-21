@@ -21,14 +21,22 @@ public class WorkerController {
         this.workerService = WorkerService;
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public List<Worker> getAllWorkers() {
         return workerService.findAll();
     }
 
     @GetMapping("/{id}")
-    public Worker getWorkerById(@PathVariable Integer id) {
-        return workerService.findById(id).orElse(null);
+    public ResponseEntity<Worker> getWorkerById(@PathVariable Integer id) {
+    	
+    	Optional<Worker> worker = workerService.findById(id);
+    	
+    	if(worker.isPresent()) {
+    		return ResponseEntity.ok(worker.get());
+    	}
+    	
+        return ResponseEntity.notFound().build();
     }
 
     @GetMapping("/username/{username}")

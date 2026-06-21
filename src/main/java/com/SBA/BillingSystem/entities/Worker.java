@@ -1,6 +1,11 @@
 package com.SBA.BillingSystem.entities;
 
 import jakarta.persistence.*; // Defines how objects will map to the DB
+
+import java.util.HashSet;
+import java.util.Set;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
@@ -24,6 +29,10 @@ public class Worker {
     @Column(name = "worker_password")
     private String workerPW;
     
+	@ManyToMany(mappedBy = "workers")
+	@JsonIgnore
+	private Set<WorkOrder> workOrders = new HashSet<>();
+
     private boolean isAdmin;
 
     public Worker() {}
@@ -58,6 +67,10 @@ public class Worker {
 		return workerUser;
 	}
 
+	public Set<WorkOrder> getWorkOrders() {
+		return workOrders;
+	}
+
 
     public void setWorkerFName(String workerFName) {
         this.workerFName = workerFName;
@@ -81,6 +94,18 @@ public class Worker {
     public void setWorkerUser(String workerUser) {
     	this.workerUser = workerUser;
     }
+
+	public void setWorkOrders(Set<WorkOrder> workOrders) {
+		for (WorkOrder workOrder : new HashSet<>(this.workOrders)) {
+			workOrder.removeWorker(this);
+		}
+
+		if (workOrders != null) {
+			for (WorkOrder workOrder : workOrders) {
+				workOrder.addWorker(this);
+			}
+		}
+	}
 
 
     public boolean isAdmin() {

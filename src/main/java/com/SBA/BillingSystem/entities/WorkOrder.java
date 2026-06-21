@@ -2,11 +2,15 @@ package com.SBA.BillingSystem.entities;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.SBA.BillingSystem.enums.WorkOrderStatus;
 
 import jakarta.persistence.*;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
 @Table(name = "work_order")
@@ -16,15 +20,20 @@ public class WorkOrder {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int WorkOrderID;
     
-	@ManyToOne
-	@JoinColumn(name = "worker_id")
-    private Worker worker;
+	@ManyToMany
+	@JoinTable(
+		name = "work_order_worker",
+		joinColumns = @JoinColumn(name = "work_order_id"),
+		inverseJoinColumns = @JoinColumn(name = "worker_id")
+	)
+	private Set<Worker> workers = new HashSet<>();
 	
 	@ManyToOne
 	@JoinColumn(name = "company_id")
     private Company company;
     
-    @Column(name = "status")
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
     private WorkOrderStatus status = WorkOrderStatus.OPEN;
     
@@ -42,7 +51,7 @@ public class WorkOrder {
 	
 	public WorkOrder(
 			int WorkOrderID, 
-			Worker worker, 
+			Set<Worker> workers,
 			Company company, 
 			WorkOrderStatus status, 
 			LocalDateTime startDateTime, 
@@ -50,7 +59,7 @@ public class WorkOrder {
 			String comment) 
 	{
 		this.WorkOrderID = WorkOrderID;
-		this.worker = worker;
+		setWorkers(workers);
 		this.company = company;
 		this.status = status;
 		this.startDateTime = startDateTime;
@@ -63,8 +72,8 @@ public class WorkOrder {
 		return WorkOrderID;
 	}
 	
-	public Worker getWorker() {
-		return worker;
+	public Set<Worker> getWorkers() {
+		return workers;
 	}
 	
 	public Company getCompany() {
@@ -96,11 +105,19 @@ public class WorkOrder {
 		this.WorkOrderID = WorkOrderID;
 	}
 	
-	public void setWorkerID(Worker worker) {
-		this.worker = worker;
+	public void setWorkers(Set<Worker> workers) {
+		for (Worker worker : new HashSet<>(this.workers)) {
+			removeWorker(worker);
+		}
+
+		if (workers != null) {
+			for (Worker worker : workers) {
+				addWorker(worker);
+			}
+		}
 	}
 	
-	public void setCompanyID(Company company) {
+	public void setCompany(Company company) {
 		this.company = company;
 	}
 	
@@ -121,7 +138,15 @@ public class WorkOrder {
 	}
 	
 	public void setItems(List<WorkOrderItem> items) {
-	    this.items = items;
+		for (WorkOrderItem item : new ArrayList<>(this.items)) {
+			removeItem(item);
+		}
+		
+		if(items != null) {
+			for (WorkOrderItem item :items) {
+				addItem(item);
+			}
+		}
 	}
 	
 	// Helper methods to add/delete items
@@ -133,5 +158,17 @@ public class WorkOrder {
 	public void removeItem(WorkOrderItem item) {
 	    items.remove(item);
 	    item.setWorkOrder(null);
+	}
+
+	public void addWorker(Worker worker) {
+		if (worker != null && workers.add(worker)) {
+			worker.getWorkOrders().add(this);
+		}
+	}
+
+	public void removeWorker(Worker worker) {
+		if (worker != null && workers.remove(worker)) {
+			worker.getWorkOrders().remove(this);
+		}
 	}
 }

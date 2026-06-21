@@ -1,8 +1,8 @@
 package com.SBA.BillingSystem.entities;
 
 import jakarta.persistence.*;
-import java.util.ArrayList;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 
 @Entity
 @Table(name = "work_order_item")
@@ -21,18 +21,14 @@ public class WorkOrderItem {
     @Column(nullable = false)
     private double price;
 	
-	@ManyToOne
-	@JoinColumn(name = "work_order_id")
+	@ManyToOne(optional = false)
+	@JoinColumn(name = "work_order_id", nullable = false)
+	@JsonIgnore
 	private WorkOrder workOrder;
 
 	public WorkOrderItem() {}
 	
-	public WorkOrderItem(
-			String itemName, 
-			int quantity, 
-			double price, 
-			WorkOrder workOrder)
-	{
+	public WorkOrderItem(String itemName, int quantity, double price, WorkOrder workOrder) {
 		this.itemName = itemName;
 		this.quantity = quantity;
 		this.price = price;

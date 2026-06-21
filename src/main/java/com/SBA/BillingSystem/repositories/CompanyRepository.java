@@ -1,9 +1,9 @@
 package com.SBA.BillingSystem.repositories;
 
-import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.SBA.BillingSystem.entities.Company;
 
-@Repository
-public interface CompanyRepository extends GenericRepository<Company, Integer> {
+
+public interface CompanyRepository extends JpaRepository<Company, Integer> {
 }

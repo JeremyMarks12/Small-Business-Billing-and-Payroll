@@ -1,10 +1,15 @@
 package com.SBA.BillingSystem.services;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.SBA.BillingSystem.entities.WorkOrder;
 import com.SBA.BillingSystem.entities.Worker;
 import com.SBA.BillingSystem.repositories.WorkerRepository;
 
@@ -49,7 +54,21 @@ public class WorkerService {
         return workerRepository.findById(id);
     }
 
+    @Transactional
     public void deleteById(Integer id) {
+    	Optional<Worker> result = workerRepository.findById(id);
+    	
+    	if(result.isEmpty()) {
+    		throw new IllegalArgumentException("Worker not found");
+    	}
+    	
+    	Worker worker = result.get();
+    	Set<WorkOrder> assignedWorkOrders = new HashSet<>(worker.getWorkOrders());
+    	
+    	for (WorkOrder workOrder : assignedWorkOrders) {
+    		workOrder.removeWorker(worker);
+    	}
+    	
         workerRepository.deleteById(id);
     }
     
