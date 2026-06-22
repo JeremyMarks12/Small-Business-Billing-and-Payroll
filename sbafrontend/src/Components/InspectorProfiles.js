@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     Box, Typography, IconButton, List, ListItem, ListItemButton, ListItemText,
     Divider, Grid, Paper, CircularProgress, Dialog, DialogTitle, DialogContent,
@@ -7,6 +7,8 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import { useAuth } from './AuthContext';
+import { apiFetch } from '../api';
+import { normalizeWorker, workerPayload } from '../model';
 
 const InspectorProfiles = () => {
     const { user } = useAuth();
@@ -68,23 +70,15 @@ const InspectorProfiles = () => {
         });
     };
 
-    const fetchWorkers = async () => {
+    const fetchWorkers = useCallback(async () => {
         try {
-            const response = await fetch('http://localhost:8080/workers');
-            const data = await response.json();
-
-			console.log("Workers from backend:", data);
-			console.log("FULL RESPONSE:", data);
-			console.log("Is array?", Array.isArray(data));
+            const data = await apiFetch('/workers');
 			
             // Filter out system admin from both lists
-			const normalizedWorkers = data.map(worker => ({
-				workerID: worker.workerID,
-				firstName: worker.firstName || worker.workerFName || '',
-				lastName: worker.lastName || worker.workerLName || '',
-				username: worker.username || worker.workerUser || '',
-				admin: worker.admin ?? worker.isAdmin ?? false
-			}));
+			const normalizedWorkers = data.map(normalizeWorker).map(worker => ({
+                ...worker,
+                admin: worker.isAdmin
+            }));
 			
 			const adminList = normalizedWorkers.filter(worker => 
 			    worker.admin === true && worker.username !== SYSTEM_ADMIN_USERNAME
@@ -102,11 +96,11 @@ const InspectorProfiles = () => {
             console.error('Failed to fetch workers:', error);
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchWorkers();
-    }, []);
+    }, [fetchWorkers]);
 
     // Handling for Add dialog
     const handleOpenAddDialog = (isAdmin) => {
@@ -231,7 +225,7 @@ const InspectorProfiles = () => {
         if (!password) return ""; // Skip validation if no password (for edit form)
         
         const minLength = 8;
-        const specialCharRegex = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/;
+        const specialCharRegex = /[!@#$%^&*()_+=[\]{};':"\\|,.<>/?-]+/;
         
         if (password.length < minLength) {
             return "Password must be at least 8 characters long";
@@ -323,23 +317,14 @@ const InspectorProfiles = () => {
         }
     
         try {
-          const response = await fetch('http://localhost:8080/worker/login', {
+          await apiFetch('/auth/login', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
               username: user.username, 
               password: passwordConfirm 
             }),
           });
-    
-          const data = await response.json();
-          
-          if (response.ok) {
-            return true;
-          } else {
-            setPasswordError('Incorrect password');
-            return false;
-          }
+          return true;
         } catch (error) {
           console.error('Error verifying password:', error);
           setPasswordError('Error verifying password');
@@ -364,36 +349,20 @@ const InspectorProfiles = () => {
         }
 
         // Remove confirmPassword before sending to API
-        const workerToSave = {
-            firstName: newWorker.firstName,
-            lastName: newWorker.lastName,
-            username: newWorker.username,
-            password: newWorker.password,
-            admin: newWorker.admin
-        };
+        const workerToSave = workerPayload(newWorker);
 
         try {
-            const response = await fetch('http://localhost:8080/worker/add', {
+            await apiFetch('/workers', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(workerToSave),
             });
-
-            if (response.ok) {
-                fetchWorkers();
-                handleCloseDialog();
-                setSnackbar({
-                    open: true,
-                    message: `New ${newWorker.admin ? 'admin' : 'inspector'} created successfully!`,
-                    severity: 'success'
-                });
-            } else {
-                setSnackbar({
-                    open: true,
-                    message: 'Failed to create new worker',
-                    severity: 'error'
-                });
-            }
+            fetchWorkers();
+            handleCloseDialog();
+            setSnackbar({
+                open: true,
+                message: `New ${newWorker.admin ? 'admin' : 'inspector'} created successfully!`,
+                severity: 'success'
+            });
         } catch (error) {
             console.error('Error during creation:', error);
             setSnackbar({
@@ -413,42 +382,27 @@ const InspectorProfiles = () => {
             return;
         }
 
-        // Prepare worker data for update (include password only if it was changed)
-        const workerToUpdate = {
-            workerID: editWorker.workerID,
-            firstName: editWorker.firstName,
-            lastName: editWorker.lastName,
-            username: editWorker.username,
-            admin: editWorker.admin
-        };
-
-        // Add password only if it was provided (changed)
-        if (editWorker.password) {
-            workerToUpdate.password = editWorker.password;
+        if (!editWorker.password) {
+            setSnackbar({
+                open: true,
+                message: 'Only password reset is supported by the current worker API.',
+                severity: 'info'
+            });
+            return;
         }
 
         try {
-            const response = await fetch(`http://localhost:8080/worker/updateWorker/${workerToUpdate.workerID}`, {
+            await apiFetch(`/workers/${editWorker.workerID}/password`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(workerToUpdate),
+                body: JSON.stringify({ newPassword: editWorker.password }),
             });
-
-            if (response.ok) {
-                fetchWorkers();
-                handleCloseDialog();
-                setSnackbar({
-                    open: true,
-                    message: `${editWorker.firstName} ${editWorker.lastName} updated successfully!`,
-                    severity: 'success'
-                });
-            } else {
-                setSnackbar({
-                    open: true,
-                    message: 'Failed to update worker',
-                    severity: 'error'
-                });
-            }
+            fetchWorkers();
+            handleCloseDialog();
+            setSnackbar({
+                open: true,
+                message: `${editWorker.firstName} ${editWorker.lastName}'s password was reset.`,
+                severity: 'success'
+            });
         } catch (error) {
             console.error('Error during update:', error);
             setSnackbar({
@@ -468,26 +422,16 @@ const InspectorProfiles = () => {
         if (!workerToDelete) return;
 
         try {
-            const response = await fetch(`http://localhost:8080/worker/deleteWorker/${workerToDelete.workerID}`, {
+            await apiFetch(`/workers/${workerToDelete.workerID}`, {
                 method: 'DELETE',
             });
-
-            if (response.ok) {
-                fetchWorkers();
-                handleCloseDeleteDialog();
-                setSnackbar({
-                    open: true,
-                    message: `${workerToDelete.firstName} ${workerToDelete.lastName} deleted successfully!`,
-                    severity: 'success'
-                });
-            } else {
-                const error = await response.json();
-                setSnackbar({
-                    open: true,
-                    message: error.message || 'Failed to delete worker',
-                    severity: 'error'
-                });
-            }
+            fetchWorkers();
+            handleCloseDeleteDialog();
+            setSnackbar({
+                open: true,
+                message: `${workerToDelete.firstName} ${workerToDelete.lastName} deleted successfully!`,
+                severity: 'success'
+            });
         } catch (error) {
             console.error('Error during deletion:', error);
             setSnackbar({
@@ -587,7 +531,7 @@ const InspectorProfiles = () => {
                 <DialogTitle>
                     {selectedWorker 
                         ? (editMode 
-                            ? `Edit ${selectedWorker.admin ? 'Admin' : 'Inspector'}` 
+                            ? `Reset ${selectedWorker.firstName}'s Password`
                             : `${selectedWorker.admin ? 'Admin' : 'Inspector'} Details`)
                         : `Add New ${newWorker.admin ? 'Admin' : 'Inspector'}`
                     }
@@ -602,7 +546,7 @@ const InspectorProfiles = () => {
                             value={selectedWorker ? editWorker.firstName : newWorker.firstName}
                             required
                             fullWidth
-                            disabled={selectedWorker && !editMode}
+                            disabled={Boolean(selectedWorker)}
                         />
                         <FormHelperText>
                             Enter the user's first name (e.g., "John")
@@ -618,7 +562,7 @@ const InspectorProfiles = () => {
                             value={selectedWorker ? editWorker.lastName : newWorker.lastName}
                             required
                             fullWidth
-                            disabled={selectedWorker && !editMode}
+                            disabled={Boolean(selectedWorker)}
                         />
                         <FormHelperText>
                             Enter the user's last name (e.g., "Smith")
@@ -636,7 +580,7 @@ const InspectorProfiles = () => {
                             error={!!formErrors.username}
                             helperText={formErrors.username || "Create a unique username (e.g., 'jsmith')"}
                             fullWidth
-                            disabled={selectedWorker && !editMode}
+                            disabled={Boolean(selectedWorker)}
                         />
                     </FormControl>
 
@@ -644,7 +588,7 @@ const InspectorProfiles = () => {
                     {(!selectedWorker || editMode) && (
                         <>
                             <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
-                                {selectedWorker ? "Change Password (leave blank to keep current password)" : "Create Password"}
+                                {selectedWorker ? "Set a new password" : "Create Password"}
                             </Typography>
 
                             <FormControl fullWidth margin="normal">
@@ -727,9 +671,9 @@ const InspectorProfiles = () => {
                             onClick={handleEditSubmit} 
                             variant="contained" 
                             color="primary"
-                            disabled={!editWorker.firstName || !editWorker.lastName || !editWorker.username}
+                            disabled={!editWorker.password || !editWorker.confirmPassword}
                         >
-                            Save Changes
+                            Reset Password
                         </Button>
                     )}
                     {!selectedWorker && (

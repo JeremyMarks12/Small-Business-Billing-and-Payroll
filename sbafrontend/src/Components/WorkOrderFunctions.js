@@ -9,19 +9,25 @@ import {
     TableHead,
     TableRow,
     Paper,
-    TableSortLabel
+    TableSortLabel,
+    Chip,
+    Alert,
+    Button,
+    Stack
 } from '@mui/material';
+import { apiFetch } from '../api';
+import { formatDateTime, getWorkOrderWorkers } from '../model';
 
 const WorkOrderFunctions = () => {
     const [workOrders, setWorkOrders] = useState([]);
     const [orderBy, setOrderBy] = useState('workOrderID');
     const [order, setOrder] = useState('asc');
+    const [error, setError] = useState('');
 
     useEffect(() => {
-        fetch("http://localhost:8080/workorders")
-            .then(res => res.json())
+        apiFetch('/workorders')
             .then(data => setWorkOrders(data))
-            .catch(err => console.error("Error fetching work orders:", err));
+            .catch(err => setError(err.message));
     }, []);
 
     const handleSort = (column) => {
@@ -31,20 +37,38 @@ const WorkOrderFunctions = () => {
     };
 
     const sortedWorkOrders = [...workOrders].sort((a, b) => {
-        if (a[orderBy] < b[orderBy]) {
+        const getValue = (workOrder) => {
+            if (orderBy === 'company') return workOrder.company?.companyName || '';
+            if (orderBy === 'workers') return getWorkOrderWorkers(workOrder).map(worker => worker.lastName).join(',');
+            return workOrder[orderBy] ?? '';
+        };
+        if (getValue(a) < getValue(b)) {
             return order === 'asc' ? -1 : 1;
         }
-        if (a[orderBy] > b[orderBy]) {
+        if (getValue(a) > getValue(b)) {
             return order === 'asc' ? 1 : -1;
         }
         return 0;
     });
+
+    const updateStatus = async (workOrderID, action) => {
+        try {
+            setError('');
+            const updated = await apiFetch(`/workorders/${workOrderID}/${action}`, { method: 'PUT' });
+            setWorkOrders(current => current.map(order => (
+                order.workOrderID === workOrderID ? updated : order
+            )));
+        } catch (err) {
+            setError(err.message);
+        }
+    };
 
     return (
         <Box sx={{ p: 3 }}>
             <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold' }}>
                 Work Order Functions
             </Typography>
+            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
             <TableContainer component={Paper}>
                 <Table>
@@ -62,33 +86,35 @@ const WorkOrderFunctions = () => {
 
                             <TableCell>
                                 <TableSortLabel
-                                    active={orderBy === 'workerID'}
-                                    direction={orderBy === 'workerID' ? order : 'asc'}
-                                    onClick={() => handleSort('workerID')}
+                                    active={orderBy === 'workers'}
+                                    direction={orderBy === 'workers' ? order : 'asc'}
+                                    onClick={() => handleSort('workers')}
                                 >
-                                    Worker ID
+                                    Assigned Workers
                                 </TableSortLabel>
                             </TableCell>
 
                             <TableCell>
                                 <TableSortLabel
-                                    active={orderBy === 'companyID'}
-                                    direction={orderBy === 'companyID' ? order : 'asc'}
-                                    onClick={() => handleSort('companyID')}
+                                    active={orderBy === 'company'}
+                                    direction={orderBy === 'company' ? order : 'asc'}
+                                    onClick={() => handleSort('company')}
                                 >
-                                    Company ID
+                                    Company
                                 </TableSortLabel>
                             </TableCell>
 
                             <TableCell>
                                 <TableSortLabel
-                                    active={orderBy === 'workOrderPDF'}
-                                    direction={orderBy === 'workOrderPDF' ? order : 'asc'}
-                                    onClick={() => handleSort('workOrderPDF')}
+                                    active={orderBy === 'status'}
+                                    direction={orderBy === 'status' ? order : 'asc'}
+                                    onClick={() => handleSort('status')}
                                 >
-                                    Work Order PDF
+                                    Status
                                 </TableSortLabel>
                             </TableCell>
+                            <TableCell>Started</TableCell>
+                            <TableCell>Actions</TableCell>
                         </TableRow>
                     </TableHead>
 
@@ -96,9 +122,23 @@ const WorkOrderFunctions = () => {
                         {sortedWorkOrders.map((wo) => (
                             <TableRow key={wo.workOrderID}>
                                 <TableCell>{wo.workOrderID}</TableCell>
-                                <TableCell>{wo.workerID}</TableCell>
-                                <TableCell>{wo.companyID}</TableCell>
-                                <TableCell>{wo.workOrderPDF || "No PDF"}</TableCell>
+                                <TableCell>
+                                    {getWorkOrderWorkers(wo).map(worker => `${worker.firstName} ${worker.lastName}`).join(', ') || 'Unassigned'}
+                                </TableCell>
+                                <TableCell>{wo.company?.companyName || 'Unassigned'}</TableCell>
+                                <TableCell><Chip label={wo.status} size="small" /></TableCell>
+                                <TableCell>{formatDateTime(wo.startDateTime)}</TableCell>
+                                <TableCell>
+                                    <Stack direction="row" spacing={1}>
+                                        {wo.status === 'OPEN' && <Button size="small" onClick={() => updateStatus(wo.workOrderID, 'start')}>Start</Button>}
+                                        {wo.status === 'IN_REVIEW' && (
+                                            <>
+                                                <Button size="small" onClick={() => updateStatus(wo.workOrderID, 'approve')}>Approve</Button>
+                                                <Button size="small" color="warning" onClick={() => updateStatus(wo.workOrderID, 'reject')}>Reject</Button>
+                                            </>
+                                        )}
+                                    </Stack>
+                                </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>

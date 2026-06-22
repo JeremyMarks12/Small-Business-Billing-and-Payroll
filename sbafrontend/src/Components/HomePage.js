@@ -8,7 +8,7 @@ import { useAuth } from './AuthContext';
 
 const HomePage = () => {
   const [open, setOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('/worker');
+  const [, setActiveTab] = useState('/worker');
   const navigate = useNavigate();
   const location = useLocation();
   const { logout, user } = useAuth();
@@ -92,7 +92,7 @@ const HomePage = () => {
               <ListItemButton
                 onClick={() => handleItemClick(item.path, item.label)}
                 sx={{
-                  backgroundColor: activeTab === item.path ? '#bbdefb' : 'inherit'
+                  backgroundColor: location.pathname === item.path ? '#bbdefb' : 'inherit'
                 }}
               >
                 <ListItemText primary={item.label} />

@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Box, Typography, Grid, Paper,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, Button, Alert, Snackbar, IconButton
+  TextField, Button, Alert, Snackbar
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { useAuth } from './AuthContext';
+import { apiFetch } from '../api';
 
 const CompanyProfiles = () => {
   const { user } = useAuth();
@@ -27,15 +28,9 @@ const CompanyProfiles = () => {
     companyEmail: ''
   });
 
-  useEffect(() => {
-    fetchCompanies();
-  }, []);
-
-  const fetchCompanies = async () => {
+  const fetchCompanies = useCallback(async () => {
     try {
-      const response = await fetch('http://localhost:8080/companies/all');
-      if (!response.ok) throw new Error('Failed to fetch companies');
-      const data = await response.json();
+      const data = await apiFetch('/companies/all');
       
       // Sort companies alphabetically by name
       const sortedCompanies = data.sort((a, b) => a.companyName.localeCompare(b.companyName));
@@ -43,9 +38,13 @@ const CompanyProfiles = () => {
       setCompanies(sortedCompanies);
     } catch (err) {
       console.error('Error fetching companies:', err);
-      handleSnackbar('Error fetching companies', 'error');
+      setSnackbar({ open: true, message: 'Error fetching companies', severity: 'error' });
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchCompanies();
+  }, [fetchCompanies]);
 
   const handleOpenAddDialog = () => {
     setCompanyForm({
@@ -117,23 +116,14 @@ const CompanyProfiles = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:8080/worker/login', {
+      await apiFetch('/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           username: user.username, 
           password: passwordConfirm 
         }),
       });
-
-      const data = await response.json();
-      
-      if (response.ok) {
-        return true;
-      } else {
-        setPasswordError('Incorrect password');
-        return false;
-      }
+      return true;
     } catch (error) {
       console.error('Error verifying password:', error);
       setPasswordError('Error verifying password');
@@ -147,13 +137,10 @@ const CompanyProfiles = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:8080/companies/add', {
+      await apiFetch('/companies/add', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(companyForm),
       });
-
-      if (!response.ok) throw new Error('Failed to add company');
 
       handleCloseDialog();
       fetchCompanies();
@@ -177,13 +164,10 @@ const CompanyProfiles = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/companies/${selectedCompany.companyID}`, {
+      await apiFetch(`/companies/${selectedCompany.companyID}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(companyForm),
       });
-
-      if (!response.ok) throw new Error('Failed to update company');
 
       handleCloseDialog();
       fetchCompanies();
@@ -200,11 +184,9 @@ const CompanyProfiles = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/companies/${selectedCompany.companyID}`, {
+      await apiFetch(`/companies/${selectedCompany.companyID}`, {
         method: 'DELETE',
       });
-
-      if (!response.ok) throw new Error('Failed to delete company');
 
       handleCloseDialog();
       fetchCompanies();

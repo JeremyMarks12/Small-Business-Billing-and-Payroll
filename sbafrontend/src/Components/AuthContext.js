@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { apiFetch } from '../api';
 
 const AuthContext = createContext(null);
 
@@ -40,12 +41,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await apiFetch('/auth/logout', { method: 'POST' });
+    } catch (error) {
+      console.warn('Server logout failed; clearing the local session.', error);
+    }
     setUser(null);
     localStorage.removeItem('user');
     localStorage.removeItem('username');
     localStorage.removeItem('loggedInUser');
-    navigate('/');
+    navigate('/login', { replace: true });
   };
 
   // Check if user is authenticated

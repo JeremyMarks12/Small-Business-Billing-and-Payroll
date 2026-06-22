@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Container, TextField, Button, Typography, Box, IconButton, InputAdornment, CircularProgress } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useAuth } from './AuthContext';
+import { apiFetch } from '../api';
 
 const LoginPage = () => {
     const [showPassword, setShowPassword] = useState(false);
@@ -21,33 +22,19 @@ const LoginPage = () => {
         setIsLoading(true);
         
         try {
-            const response = await fetch('http://localhost:8080/auth/login', {
+            const data = await apiFetch('/auth/login', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ username, password }),
+                body: JSON.stringify({ username: username.trim(), password }),
             });
-
-            const data = await response.json();
-            
-            if (response.ok) {
-                // Create a user object with all needed data
-                const userData = {
-                    username: data.workerUser,
-                    firstName: data.workerFName,
-                    lastName: data.workerLName,
-                    isAdmin: data.admin,
-                    workerID: data.workerID || 0 // Fallback if ID is not returned
-                };
-                
-                // Call the login function from AuthContext
-                login(userData);
-            } else {
-                setError(data.message || 'Invalid username or password');
-            }
+            login({
+                username: data.workerUser,
+                firstName: data.workerFName,
+                lastName: data.workerLName,
+                isAdmin: data.admin,
+                workerID: data.workerID
+            });
         } catch (error) {
-            setError('Error connecting to server. Please try again later.');
+            setError(error.message || 'Error connecting to server. Please try again later.');
             console.error('Connection error:', error);
         } finally {
             setIsLoading(false);

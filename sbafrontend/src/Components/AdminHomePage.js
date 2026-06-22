@@ -5,10 +5,11 @@ import {
 } from '@mui/material';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from './AuthContext';
+import { apiFetch } from '../api';
 
 const AdminHomePage = () => {
     const [open, setOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState('/admin');
+    const [, setActiveTab] = useState('/admin');
     const navigate = useNavigate();
     const location = useLocation();
     const { logout, user } = useAuth();
@@ -17,12 +18,10 @@ const AdminHomePage = () => {
 	
     const menuItems = [
 		{ label: 'Work Order Functions', path: '/admin/workorders'},
-		{ label: 'N/A', path: ''},
         { label: 'Assign Work', path: '/admin/assign' },
         { label: 'View Completed Work', path: '/admin/viewwork' },
         { label: 'Company Profiles', path: '/admin/companies' },
         { label: 'Inspector Profiles', path: '/admin/inspectors' },
-        { label: 'Billing', path: '/admin/billing' },
         { label: 'Settings (Profile)', path: '/admin/profile' },
         { label: 'Logout', path: '/admin/logout' }
     ];
@@ -58,11 +57,8 @@ const AdminHomePage = () => {
 	
 	// Block Test
 	useEffect(() => {
-	    fetch("http://localhost:8080/workorders")
-	        .then(res => res.json())
-	        .then(data => {
-	            setWorkOrderCount(data.length);
-	        })
+	    apiFetch('/workorders/count')
+	        .then(setWorkOrderCount)
 	        .catch(err => console.error("Error fetching work orders:", err));
 	}, []);
 
@@ -114,7 +110,7 @@ const AdminHomePage = () => {
 									borderRadius: '12px',
 									mx: 1,
 									
-									'&hover': {
+										'&:hover': {
 										backgroundColor:
 											location.pathname === item.path
 												? '#1f3b63'
@@ -151,7 +147,7 @@ const AdminHomePage = () => {
 			                Admin Dashboard
 			            </Typography>
 						
-						//Work order summary
+						{/* Work order summary */}
 			            <Box
 							onClick={() => navigate('/admin/workorders')}
 			                sx={{
