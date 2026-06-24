@@ -1,4 +1,7 @@
+import { mockApiFetch } from './mockApi';
+
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+const USE_MOCK_API = process.env.REACT_APP_USE_MOCK_API === 'true';
 
 export class ApiError extends Error {
   constructor(message, status, data) {
@@ -10,6 +13,10 @@ export class ApiError extends Error {
 }
 
 export const apiFetch = async (path, options = {}) => {
+  if (USE_MOCK_API) {
+    return mockApiFetch(path, options);
+  }
+
   const headers = new Headers(options.headers || {});
   const hasBody = options.body !== undefined && options.body !== null;
 
@@ -37,4 +44,3 @@ export const apiFetch = async (path, options = {}) => {
 
   return data;
 };
-

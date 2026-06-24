@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/workorders")
@@ -51,6 +52,12 @@ public class WorkOrderController {
     @PostMapping
     public WorkOrder addWorkOrder(@RequestBody WorkOrder workOrder) {
         return workOrderService.createWorkOrder(workOrder);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/{id}/assign")
+    public WorkOrder reassignWorkOrder(@PathVariable Integer id, @RequestBody Map<String, Integer> request) {
+    	return workOrderService.reassignWorkOrder(id, request.get("workerID"));
     }
 
     @PreAuthorize("hasRole('ADMIN')")

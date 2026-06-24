@@ -3,10 +3,12 @@ import {
   Alert, Box, Button, Card, CardActions, CardContent,
   CircularProgress, Grid, Typography
 } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../api';
 import { formatDateTime, getWorkOrderWorkers } from '../model';
 
 const AdminViewWork = () => {
+  const navigate = useNavigate();
   const [workOrders, setWorkOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -43,7 +45,18 @@ const AdminViewWork = () => {
           <Grid item xs={12} md={6} lg={4} key={order.workOrderID}>
             <Card>
               <CardContent>
-                <Typography variant="h6">Work order #{order.workOrderID}</Typography>
+                <Typography
+                  variant="h6"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => navigate(`/admin/workorders/${order.workOrderID}`)}
+                  onKeyDown={event => {
+                    if (event.key === 'Enter') navigate(`/admin/workorders/${order.workOrderID}`);
+                  }}
+                  sx={{ cursor: 'pointer', color: 'primary.main' }}
+                >
+                  Work order #{order.workOrderID}
+                </Typography>
                 <Typography>{order.company?.companyName || 'No company'}</Typography>
                 <Typography color="text.secondary">
                   {getWorkOrderWorkers(order).map(worker => `${worker.firstName} ${worker.lastName}`).join(', ') || 'Unassigned'}

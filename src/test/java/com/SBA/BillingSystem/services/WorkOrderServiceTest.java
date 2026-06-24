@@ -22,6 +22,7 @@ import com.SBA.BillingSystem.entities.WorkOrder;
 import com.SBA.BillingSystem.entities.WorkOrderItem;
 import com.SBA.BillingSystem.entities.Worker;
 import com.SBA.BillingSystem.enums.WorkOrderStatus;
+import com.SBA.BillingSystem.repositories.WorkerRepository;
 import com.SBA.BillingSystem.repositories.WorkOrderRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,6 +30,9 @@ public class WorkOrderServiceTest {
 
     @Mock
     private WorkOrderRepository workOrderRepository;
+
+    @Mock
+    private WorkerRepository workerRepository;
 
     @InjectMocks
     private WorkOrderService workOrderService;
@@ -146,6 +150,36 @@ public class WorkOrderServiceTest {
         workOrderService.deleteById(1);
 
         verify(workOrderRepository).delete(workOrder);
+    }
+
+    @Test
+    void reassignWorkOrderReplacesWorkerOnIncompleteOrder() {
+        WorkOrder workOrder = orderWithStatus(WorkOrderStatus.IN_PROCESS);
+        Worker currentWorker = new Worker();
+        currentWorker.setWorkerID(2);
+        Worker newWorker = new Worker();
+        newWorker.setWorkerID(3);
+        workOrder.addWorker(currentWorker);
+
+        when(workOrderRepository.findById(1)).thenReturn(Optional.of(workOrder));
+        when(workerRepository.findById(3)).thenReturn(Optional.of(newWorker));
+        when(workOrderRepository.save(workOrder)).thenReturn(workOrder);
+
+        WorkOrder result = workOrderService.reassignWorkOrder(1, 3);
+
+        assertSame(workOrder, result);
+        assertEquals(1, workOrder.getWorkers().size());
+        assertSame(newWorker, workOrder.getWorkers().iterator().next());
+    }
+
+    @Test
+    void reassignWorkOrderRejectsCompletedOrder() {
+        WorkOrder workOrder = orderWithStatus(WorkOrderStatus.COMPLETE);
+        when(workOrderRepository.findById(1)).thenReturn(Optional.of(workOrder));
+
+        assertThrows(IllegalStateException.class,
+                () -> workOrderService.reassignWorkOrder(1, 3));
+        verify(workOrderRepository, never()).save(workOrder);
     }
 
     private WorkOrder orderWithStatus(WorkOrderStatus status) {

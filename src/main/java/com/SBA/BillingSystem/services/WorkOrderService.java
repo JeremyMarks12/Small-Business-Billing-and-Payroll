@@ -7,16 +7,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.SBA.BillingSystem.entities.WorkOrder;
+import com.SBA.BillingSystem.entities.Worker;
 import com.SBA.BillingSystem.enums.WorkOrderStatus;
+import com.SBA.BillingSystem.repositories.WorkerRepository;
 import com.SBA.BillingSystem.repositories.WorkOrderRepository;
 
 @Service
 public class WorkOrderService{
 
     private final WorkOrderRepository workOrderRepository;
+    private final WorkerRepository workerRepository;
 
-    public WorkOrderService(WorkOrderRepository workOrderRepository) {
+    public WorkOrderService(WorkOrderRepository workOrderRepository, WorkerRepository workerRepository) {
         this.workOrderRepository = workOrderRepository;
+        this.workerRepository = workerRepository;
     }
     
     @Transactional
@@ -48,6 +52,23 @@ public class WorkOrderService{
     	workOrder.setWorkOrderID(0);
     	workOrder.setStatus(WorkOrderStatus.OPEN);
     	
+        return workOrderRepository.save(workOrder);
+    }
+
+    @Transactional
+    public WorkOrder reassignWorkOrder(Integer workOrderID, Integer workerID) {
+        WorkOrder workOrder = getRequiredWorkOrder(workOrderID);
+
+        if (workOrder.getStatus() == WorkOrderStatus.COMPLETE) {
+            throw new IllegalStateException("Completed work orders cannot be reassigned");
+        }
+
+        Worker worker = workerRepository.findById(workerID)
+                .orElseThrow(() -> new IllegalArgumentException("Worker not found"));
+
+        workOrder.getWorkers().clear();
+        workOrder.addWorker(worker);
+
         return workOrderRepository.save(workOrder);
     }
 

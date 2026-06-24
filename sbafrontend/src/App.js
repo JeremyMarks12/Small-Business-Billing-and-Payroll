@@ -15,6 +15,7 @@ import CompanyProfiles from './Components/CompanyProfiles';
 import InspectorProfiles from './Components/InspectorProfiles';
 import ProfileTab from './Components/ProfileTab';
 import WorkOrderFunctions from './Components/WorkOrderFunctions';
+import WorkOrderDetail from './Components/WorkOrderDetail';
 
 // Worker pages
 import HomePage from './Components/HomePage';
@@ -45,6 +46,7 @@ function App() {
               <Route path="inspectors" element={<InspectorProfiles />} />
               <Route path="profile" element={<ProfileTab />} />
 			  <Route path="workorders" element={<WorkOrderFunctions />} />
+              <Route path="workorders/:workOrderID" element={<WorkOrderDetail />} />
               <Route path="*" element={<Navigate to="/admin" replace />} />
             </Route>
           </Route>
