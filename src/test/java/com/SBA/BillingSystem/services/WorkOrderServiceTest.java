@@ -22,6 +22,7 @@ import com.SBA.BillingSystem.entities.WorkOrder;
 import com.SBA.BillingSystem.entities.WorkOrderItem;
 import com.SBA.BillingSystem.entities.Worker;
 import com.SBA.BillingSystem.enums.WorkOrderStatus;
+import com.SBA.BillingSystem.repositories.CompanyRepository;
 import com.SBA.BillingSystem.repositories.WorkerRepository;
 import com.SBA.BillingSystem.repositories.WorkOrderRepository;
 
@@ -34,11 +35,14 @@ public class WorkOrderServiceTest {
     @Mock
     private WorkerRepository workerRepository;
 
+    @Mock
+    private CompanyRepository companyRepository;
+
     @InjectMocks
     private WorkOrderService workOrderService;
 
     @Test
-    void createWorkOrderResetsIdAndStatusBeforeSaving() {
+    void createWorkOrderResetsIdAndSetsOpenWhenUnassignedBeforeSaving() {
         WorkOrder workOrder = new WorkOrder();
         workOrder.setWorkOrderID(25);
         workOrder.setStatus(WorkOrderStatus.COMPLETE);
@@ -49,6 +53,18 @@ public class WorkOrderServiceTest {
         assertSame(workOrder, result);
         assertEquals(0, workOrder.getWorkOrderID());
         assertEquals(WorkOrderStatus.OPEN, workOrder.getStatus());
+    }
+
+    @Test
+    void createWorkOrderSetsInProcessWhenWorkerIsAssigned() {
+        WorkOrder workOrder = new WorkOrder();
+        workOrder.addWorker(new Worker());
+        when(workOrderRepository.save(workOrder)).thenReturn(workOrder);
+
+        WorkOrder result = workOrderService.createWorkOrder(workOrder);
+
+        assertSame(workOrder, result);
+        assertEquals(WorkOrderStatus.IN_PROCESS, workOrder.getStatus());
     }
 
     @Test
@@ -96,6 +112,33 @@ public class WorkOrderServiceTest {
         workOrderService.submitForReview(1);
 
         assertEquals(WorkOrderStatus.IN_REVIEW, workOrder.getStatus());
+    }
+
+    @Test
+    void updateCommentChangesWorkOrderComment() {
+        WorkOrder workOrder = orderWithStatus(WorkOrderStatus.OPEN);
+        when(workOrderRepository.findById(1)).thenReturn(Optional.of(workOrder));
+        when(workOrderRepository.save(workOrder)).thenReturn(workOrder);
+
+        workOrderService.updateComment(1, "Updated notes");
+
+        assertEquals("Updated notes", workOrder.getComment());
+    }
+
+    @Test
+    void addItemAssociatesItemToWorkOrder() {
+        WorkOrder workOrder = orderWithStatus(WorkOrderStatus.OPEN);
+        WorkOrderItem item = new WorkOrderItem();
+        item.setItemName("Inspection");
+        item.setQuantity(1);
+        item.setPrice(100);
+        when(workOrderRepository.findById(1)).thenReturn(Optional.of(workOrder));
+        when(workOrderRepository.save(workOrder)).thenReturn(workOrder);
+
+        workOrderService.addItem(1, item);
+
+        assertEquals(1, workOrder.getItems().size());
+        assertSame(workOrder, item.getWorkOrder());
     }
 
     @Test
@@ -153,7 +196,7 @@ public class WorkOrderServiceTest {
     }
 
     @Test
-    void reassignWorkOrderReplacesWorkerOnIncompleteOrder() {
+    void reassignWorkOrderAddsWorkerOnIncompleteOrder() {
         WorkOrder workOrder = orderWithStatus(WorkOrderStatus.IN_PROCESS);
         Worker currentWorker = new Worker();
         currentWorker.setWorkerID(2);
@@ -168,8 +211,8 @@ public class WorkOrderServiceTest {
         WorkOrder result = workOrderService.reassignWorkOrder(1, 3);
 
         assertSame(workOrder, result);
-        assertEquals(1, workOrder.getWorkers().size());
-        assertSame(newWorker, workOrder.getWorkers().iterator().next());
+        assertEquals(2, workOrder.getWorkers().size());
+        assertEquals(WorkOrderStatus.IN_PROCESS, workOrder.getStatus());
     }
 
     @Test
@@ -180,6 +223,38 @@ public class WorkOrderServiceTest {
         assertThrows(IllegalStateException.class,
                 () -> workOrderService.reassignWorkOrder(1, 3));
         verify(workOrderRepository, never()).save(workOrder);
+    }
+
+    @Test
+    void removeWorkerFromWorkOrderReturnsEmptyOrderToOpen() {
+        WorkOrder workOrder = orderWithStatus(WorkOrderStatus.IN_PROCESS);
+        Worker worker = new Worker();
+        worker.setWorkerID(2);
+        workOrder.addWorker(worker);
+
+        when(workOrderRepository.findById(1)).thenReturn(Optional.of(workOrder));
+        when(workerRepository.findById(2)).thenReturn(Optional.of(worker));
+        when(workOrderRepository.save(workOrder)).thenReturn(workOrder);
+
+        WorkOrder result = workOrderService.removeWorkerFromWorkOrder(1, 2);
+
+        assertSame(workOrder, result);
+        assertEquals(0, workOrder.getWorkers().size());
+        assertEquals(WorkOrderStatus.OPEN, workOrder.getStatus());
+    }
+
+    @Test
+    void removeCompanyFromWorkOrderClearsCompany() {
+        WorkOrder workOrder = orderWithStatus(WorkOrderStatus.OPEN);
+        workOrder.setCompany(new Company());
+
+        when(workOrderRepository.findById(1)).thenReturn(Optional.of(workOrder));
+        when(workOrderRepository.save(workOrder)).thenReturn(workOrder);
+
+        WorkOrder result = workOrderService.removeCompanyFromWorkOrder(1);
+
+        assertSame(workOrder, result);
+        assertEquals(null, workOrder.getCompany());
     }
 
     private WorkOrder orderWithStatus(WorkOrderStatus status) {

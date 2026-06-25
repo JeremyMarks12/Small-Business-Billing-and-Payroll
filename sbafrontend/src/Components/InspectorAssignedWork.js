@@ -46,7 +46,7 @@ const InspectorAssignedWork = () => {
                 <Typography variant="h6">Work order #{order.workOrderID}</Typography>
                 <Typography>{order.company?.companyName || 'No company assigned'}</Typography>
                 <Typography variant="body2" sx={{ my: 1 }}>{order.comment || 'No notes'}</Typography>
-                <Typography variant="body2">Started: {formatDateTime(order.startDateTime)}</Typography>
+                <Typography variant="body2">Start: {formatDateTime(order.startDateTime)}</Typography>
                 <Chip label={order.status} size="small" sx={{ mt: 2 }} />
               </CardContent>
               {order.status === 'IN_PROCESS' && (

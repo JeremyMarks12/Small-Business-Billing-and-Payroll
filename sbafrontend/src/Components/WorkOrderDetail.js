@@ -98,7 +98,7 @@ const WorkOrderDetail = () => {
         <Table>
           <TableBody>
             <DetailRow label="Status" value={workOrder.status} />
-            <DetailRow label="Started" value={formatDateTime(workOrder.startDateTime)} />
+            <DetailRow label="Start" value={formatDateTime(workOrder.startDateTime)} />
             <DetailRow label="Finished" value={formatDateTime(workOrder.endDateTime)} />
             <DetailRow
               label="Assigned Workers"

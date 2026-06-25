@@ -207,7 +207,7 @@ const handleWorkOrders = (segments, method, options) => {
       workOrderID: nextId(state.workOrders, 'workOrderID'),
       workers: workerRefs.map(worker => findWorker(worker.workerID)).filter(Boolean).map(withoutPassword),
       company: company ? clone(company) : null,
-      status: 'OPEN',
+      status: workerRefs.length ? 'IN_PROCESS' : 'OPEN',
       startDateTime: new Date().toISOString(),
       endDateTime: null,
       comment: payload.comment || '',
@@ -237,6 +237,74 @@ const handleWorkOrders = (segments, method, options) => {
     return null;
   }
 
+  if (segments[2] === 'workers' && segments[3] && method === 'DELETE') {
+    const workerID = Number(segments[3]);
+    workOrder.workers = workOrder.workers.filter(worker => worker.workerID !== workerID);
+    if (!workOrder.workers.length) {
+      workOrder.status = 'OPEN';
+      workOrder.endDateTime = null;
+    }
+    saveState();
+    return workOrder;
+  }
+
+  if (segments[2] === 'company' && method === 'DELETE') {
+    workOrder.company = null;
+    saveState();
+    return workOrder;
+  }
+
+  if (segments[2] === 'company' && method === 'PUT') {
+    const { companyID } = bodyAsJson(options);
+    const company = findCompany(companyID);
+    if (!company) {
+      throw new MockApiError('Company not found', 404);
+    }
+
+    workOrder.company = clone(company);
+    saveState();
+    return workOrder;
+  }
+
+  if (segments[2] === 'comment' && method === 'PUT') {
+    const { comment = '' } = bodyAsJson(options);
+    workOrder.comment = comment;
+    saveState();
+    return workOrder;
+  }
+
+  if (segments[2] === 'items' && method === 'POST') {
+    const payload = bodyAsJson(options);
+    const item = {
+      workOrderItemID: nextId(workOrder.items || [], 'workOrderItemID'),
+      itemType: payload.itemType || '',
+      itemName: payload.itemName || '',
+      quantity: Number(payload.quantity) || 0,
+      price: Number(payload.price) || 0,
+    };
+    workOrder.items = [...(workOrder.items || []), item];
+    saveState();
+    return workOrder;
+  }
+
+  if (segments[2] === 'items' && segments[3] && method === 'PUT') {
+    const itemID = Number(segments[3]);
+    const payload = bodyAsJson(options);
+    workOrder.items = (workOrder.items || []).map(item => (
+      item.workOrderItemID === itemID
+        ? {
+            ...item,
+            itemType: payload.itemType || '',
+            itemName: payload.itemName || '',
+            quantity: Number(payload.quantity) || 0,
+            price: Number(payload.price) || 0,
+          }
+        : item
+    ));
+    saveState();
+    return workOrder;
+  }
+
   if (segments[2] === 'start' && method === 'PUT') {
     workOrder.startDateTime = new Date().toISOString();
     return setWorkOrderStatus(workOrder, 'IN_PROCESS');
@@ -249,11 +317,15 @@ const handleWorkOrders = (segments, method, options) => {
 
     const { workerID } = bodyAsJson(options);
     const worker = findWorker(workerID);
-    if (!worker || worker.admin) {
+    if (!worker) {
       throw new MockApiError('Worker not found', 404);
     }
 
-    workOrder.workers = [withoutPassword(worker)];
+    if (!workOrder.workers.some(item => item.workerID === worker.workerID)) {
+      workOrder.workers = [...workOrder.workers, withoutPassword(worker)];
+    }
+    workOrder.status = 'IN_PROCESS';
+    workOrder.endDateTime = null;
     saveState();
     return workOrder;
   }

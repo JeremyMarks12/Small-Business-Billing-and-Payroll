@@ -17,11 +17,11 @@ const AdminHomePage = () => {
 	const[workOrderCount, setWorkOrderCount] = useState(0);
 	
     const menuItems = [
-		{ label: 'Work Order Functions', path: '/admin/workorders'},
-        { label: 'Assign Work', path: '/admin/assign' },
-        { label: 'View Completed Work', path: '/admin/viewwork' },
+        { label: 'My Work Orders', path: '/admin/my-workorders' },
+		{ label: 'View Work Orders', path: '/admin/workorders'},
+        { label: 'Work Order Functions', path: '/admin/assign' },
         { label: 'Company Profiles', path: '/admin/companies' },
-        { label: 'Inspector Profiles', path: '/admin/inspectors' },
+        { label: 'Worker Profiles', path: '/admin/inspectors' },
         { label: 'Settings (Profile)', path: '/admin/profile' },
         { label: 'Logout', path: '/admin/logout' }
     ];

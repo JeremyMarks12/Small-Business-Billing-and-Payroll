@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    Box, Typography, IconButton, List, ListItem, ListItemButton, ListItemText,
-    Divider, Grid, Paper, CircularProgress, Dialog, DialogTitle, DialogContent,
-    DialogActions, TextField, Button, Alert, Snackbar, FormControl, FormHelperText
+    Box, Typography, Paper, CircularProgress, Dialog, DialogTitle, DialogContent,
+    DialogActions, TextField, Button, Alert, Snackbar, FormControl, FormHelperText,
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+    InputLabel, MenuItem, Select
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import RemoveIcon from '@mui/icons-material/Remove';
 import { useAuth } from './AuthContext';
 import { apiFetch } from '../api';
 import { normalizeWorker, workerPayload } from '../model';
@@ -103,7 +102,7 @@ const InspectorProfiles = () => {
     }, [fetchWorkers]);
 
     // Handling for Add dialog
-    const handleOpenAddDialog = (isAdmin) => {
+    const handleOpenAddDialog = () => {
         setSelectedWorker(null);
         setEditMode(false);
         setNewWorker({
@@ -112,7 +111,7 @@ const InspectorProfiles = () => {
             username: '',
             password: '',
             confirmPassword: '',
-            admin: isAdmin
+            admin: false
         });
         setFormErrors({
             username: '',
@@ -454,77 +453,61 @@ const InspectorProfiles = () => {
         );
     }
 
-    // Custom list item component that includes both the name and delete button
-    const WorkerListItem = ({ worker, isAdmin }) => {
-        return (
-            <ListItem 
-                disablePadding
-                secondaryAction={
-                    <IconButton 
-                        edge="end" 
-                        aria-label="delete"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenDeleteDialog(worker);
-                        }}
-                        size="small"
-                    >
-                        <RemoveIcon fontSize="small" />
-                    </IconButton>
-                }
-            >
-                <ListItemButton
-                    onClick={() => handleOpenViewDialog(worker)}
-                >
-                    <ListItemText primary={`${worker.firstName} ${worker.lastName}`} />
-                </ListItemButton>
-            </ListItem>
-        );
-    };
+    const WorkerTable = ({ title, rows }) => (
+        <Box sx={{ mb: 4 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                <Typography variant="h5" sx={{ fontWeight: 'bold' }}>{title}</Typography>
+            </Box>
+
+            <TableContainer component={Paper}>
+                <Table>
+                    <TableHead>
+                        <TableRow>
+                            <TableCell>Name</TableCell>
+                            <TableCell>Username</TableCell>
+                            <TableCell>Role</TableCell>
+                            <TableCell align="right">Actions</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {rows.map(worker => (
+                            <TableRow key={worker.workerID}>
+                                <TableCell>
+                                    <Button size="small" onClick={() => handleOpenViewDialog(worker)}>
+                                        {worker.firstName} {worker.lastName}
+                                    </Button>
+                                </TableCell>
+                                <TableCell>{worker.username}</TableCell>
+                                <TableCell>{worker.admin ? 'Admin' : 'Worker'}</TableCell>
+                                <TableCell align="right">
+                                    <Button size="small" color="error" onClick={() => handleOpenDeleteDialog(worker)}>
+                                        Delete
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                        {!rows.length && (
+                            <TableRow>
+                                <TableCell colSpan={4}>No {title.toLowerCase()} found.</TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+        </Box>
+    );
 
     return (
         <Box sx={{ p: 3 }}>
-            <Typography variant="h4" sx={{ fontWeight: 'bold', textAlign: 'center', mb: 4 }}>
-                Inspector Profiles
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+                <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                    Worker Profiles
+                </Typography>
+                <Button variant="contained" onClick={handleOpenAddDialog}>Add Worker</Button>
+            </Box>
 
-            <Grid container spacing={4} justifyContent="center">
-                {/* Admin Box */}
-                <Grid item xs={12} md={5}>
-                    <Paper elevation={3} sx={{ p: 2, height: 400, overflowY: 'auto' }}>
-                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Admins</Typography>
-                            <IconButton onClick={() => handleOpenAddDialog(true)}>
-                                <AddIcon />
-                            </IconButton>
-                        </Box>
-                        <Divider />
-                        <List>
-                            {admins.map((admin) => (
-                                <WorkerListItem key={admin.workerID} worker={admin} isAdmin={true} />
-                            ))}
-                        </List>
-                    </Paper>
-                </Grid>
-
-                {/* Inspector Box */}
-                <Grid item xs={12} md={5}>
-                    <Paper elevation={3} sx={{ p: 2, height: 400, overflowY: 'auto' }}>
-                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Inspectors</Typography>
-                            <IconButton onClick={() => handleOpenAddDialog(false)}>
-                                <AddIcon />
-                            </IconButton>
-                        </Box>
-                        <Divider />
-                        <List>
-                            {inspectors.map((worker) => (
-                                <WorkerListItem key={worker.workerID} worker={worker} isAdmin={false} />
-                            ))}
-                        </List>
-                    </Paper>
-                </Grid>
-            </Grid>
+            <WorkerTable title="Admins" rows={admins} />
+            <WorkerTable title="Workers" rows={inspectors} />
 
             {/* Dialog for Add/View/Edit */}
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
@@ -537,6 +520,23 @@ const InspectorProfiles = () => {
                     }
                 </DialogTitle>
                 <DialogContent>
+                    {!selectedWorker && (
+                        <FormControl fullWidth margin="normal">
+                            <InputLabel>Worker type</InputLabel>
+                            <Select
+                                label="Worker type"
+                                value={newWorker.admin ? 'admin' : 'worker'}
+                                onChange={event => setNewWorker(prev => ({
+                                    ...prev,
+                                    admin: event.target.value === 'admin'
+                                }))}
+                            >
+                                <MenuItem value="worker">Worker</MenuItem>
+                                <MenuItem value="admin">Admin</MenuItem>
+                            </Select>
+                        </FormControl>
+                    )}
+
                     {/* First Name */}
                     <FormControl fullWidth margin="normal">
                         <TextField 

@@ -14,6 +14,7 @@ const HomePage = () => {
   const { logout, user } = useAuth();
 
   const menuItems = [
+    { label: 'My Work Orders', path: '/worker/my-workorders' },
     { label: 'View Assigned Work', path: '/worker/assigned' },
     { label: 'Billing', path: '/worker/billing' },
     { label: 'Profile', path: '/worker/profile' },

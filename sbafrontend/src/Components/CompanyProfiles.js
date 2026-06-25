@@ -1,16 +1,18 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Box, Typography, Grid, Paper,
+  Box, Typography, Paper, Table, TableBody, TableCell, TableContainer,
+  TableHead, TableRow, TableSortLabel,
   Dialog, DialogTitle, DialogContent, DialogActions,
   TextField, Button, Alert, Snackbar
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
 import { useAuth } from './AuthContext';
 import { apiFetch } from '../api';
 
 const CompanyProfiles = () => {
   const { user } = useAuth();
   const [companies, setCompanies] = useState([]);
+  const [orderBy, setOrderBy] = useState('companyName');
+  const [order, setOrder] = useState('asc');
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [editMode, setEditMode] = useState(false);
@@ -45,6 +47,21 @@ const CompanyProfiles = () => {
   useEffect(() => {
     fetchCompanies();
   }, [fetchCompanies]);
+
+  const handleSort = (column) => {
+    const isAsc = orderBy === column && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(column);
+  };
+
+  const sortedCompanies = [...companies].sort((a, b) => {
+    const aValue = a[orderBy] || '';
+    const bValue = b[orderBy] || '';
+
+    if (aValue < bValue) return order === 'asc' ? -1 : 1;
+    if (aValue > bValue) return order === 'asc' ? 1 : -1;
+    return 0;
+  });
 
   const handleOpenAddDialog = () => {
     setCompanyForm({
@@ -199,31 +216,71 @@ const CompanyProfiles = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" align="center" gutterBottom sx={{ fontWeight: 'bold', mb: 4 }}>
-        Company Profiles
-      </Typography>
-      <Grid container spacing={2}>
-        {companies.map((company) => (
-          <Grid item xs={12} sm={6} md={4} lg={2} key={company.companyID}>
-            <Paper
-              elevation={3}
-              sx={{ p: 2, textAlign: 'center', cursor: 'pointer' }}
-              onClick={() => handleOpenViewDialog(company)}
-            >
-              {company.companyName}
-            </Paper>
-          </Grid>
-        ))}
-        <Grid item xs={12} sm={6} md={4} lg={2}>
-          <Paper
-            elevation={3}
-            sx={{ p: 2, textAlign: 'center', cursor: 'pointer' }}
-            onClick={handleOpenAddDialog}
-          >
-            <AddIcon fontSize="large" />
-          </Paper>
-        </Grid>
-      </Grid>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+        <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+          Company Profiles
+        </Typography>
+        <Button variant="contained" onClick={handleOpenAddDialog}>Add Company</Button>
+      </Box>
+
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === 'companyName'}
+                  direction={orderBy === 'companyName' ? order : 'asc'}
+                  onClick={() => handleSort('companyName')}
+                >
+                  Company
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === 'companyAddress'}
+                  direction={orderBy === 'companyAddress' ? order : 'asc'}
+                  onClick={() => handleSort('companyAddress')}
+                >
+                  Address
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === 'companyPhone'}
+                  direction={orderBy === 'companyPhone' ? order : 'asc'}
+                  onClick={() => handleSort('companyPhone')}
+                >
+                  Phone
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === 'companyEmail'}
+                  direction={orderBy === 'companyEmail' ? order : 'asc'}
+                  onClick={() => handleSort('companyEmail')}
+                >
+                  Email
+                </TableSortLabel>
+              </TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {sortedCompanies.map(company => (
+              <TableRow key={company.companyID}>
+                <TableCell>
+                  <Button size="small" onClick={() => handleOpenViewDialog(company)}>
+                    {company.companyName}
+                  </Button>
+                </TableCell>
+                <TableCell>{company.companyAddress || 'Not set'}</TableCell>
+                <TableCell>{company.companyPhone || 'Not set'}</TableCell>
+                <TableCell>{company.companyEmail || 'Not set'}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
       {/* Dialog */}
       <Dialog open={openDialog} onClose={handleCloseDialog}>

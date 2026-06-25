@@ -2,6 +2,7 @@ package com.SBA.BillingSystem.controllers;
 
 import org.springframework.web.bind.annotation.*;
 import com.SBA.BillingSystem.entities.WorkOrder;
+import com.SBA.BillingSystem.entities.WorkOrderItem;
 import com.SBA.BillingSystem.services.WorkOrderService;
 import java.util.List;
 import java.util.Optional;
@@ -58,6 +59,39 @@ public class WorkOrderController {
     @PutMapping("/{id}/assign")
     public WorkOrder reassignWorkOrder(@PathVariable Integer id, @RequestBody Map<String, Integer> request) {
     	return workOrderService.reassignWorkOrder(id, request.get("workerID"));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/{id}/workers/{workerID}")
+    public WorkOrder removeWorkerFromWorkOrder(@PathVariable Integer id, @PathVariable Integer workerID) {
+    	return workOrderService.removeWorkerFromWorkOrder(id, workerID);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/{id}/company")
+    public WorkOrder removeCompanyFromWorkOrder(@PathVariable Integer id) {
+    	return workOrderService.removeCompanyFromWorkOrder(id);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/{id}/company")
+    public WorkOrder assignCompanyToWorkOrder(@PathVariable Integer id, @RequestBody Map<String, Integer> request) {
+    	return workOrderService.assignCompanyToWorkOrder(id, request.get("companyID"));
+    }
+
+    @PutMapping("/{id}/comment")
+    public WorkOrder updateComment(@PathVariable Integer id, @RequestBody Map<String, String> request) {
+    	return workOrderService.updateComment(id, request.get("comment"));
+    }
+
+    @PostMapping("/{id}/items")
+    public WorkOrder addItem(@PathVariable Integer id, @RequestBody WorkOrderItem item) {
+    	return workOrderService.addItem(id, item);
+    }
+
+    @PutMapping("/{id}/items/{itemID}")
+    public WorkOrder updateItem(@PathVariable Integer id, @PathVariable Integer itemID, @RequestBody WorkOrderItem item) {
+    	return workOrderService.updateItem(id, itemID, item);
     }
 
     @PreAuthorize("hasRole('ADMIN')")

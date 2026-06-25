@@ -21,30 +21,39 @@ import {
     InputLabel,
     MenuItem,
     Select,
-    Stack
+    TextField,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../api';
 import { formatDateTime, getWorkOrderWorkers, normalizeWorker } from '../model';
+import { useAuth } from './AuthContext';
 
 const WorkOrderFunctions = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [workOrders, setWorkOrders] = useState([]);
     const [workers, setWorkers] = useState([]);
+    const [companies, setCompanies] = useState([]);
     const [orderBy, setOrderBy] = useState('workOrderID');
     const [order, setOrder] = useState('asc');
     const [error, setError] = useState('');
-    const [reassignTarget, setReassignTarget] = useState(null);
-    const [selectedWorkerID, setSelectedWorkerID] = useState('');
+    const [createOpen, setCreateOpen] = useState(false);
+    const [workerID, setWorkerID] = useState('');
+    const [companyID, setCompanyID] = useState('');
+    const [comment, setComment] = useState('');
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        Promise.all([apiFetch('/workorders'), apiFetch('/workers')])
-            .then(([workOrderData, workerData]) => {
+        Promise.all([apiFetch('/workorders'), apiFetch('/workers'), apiFetch('/companies/all')])
+            .then(([workOrderData, workerData, companyData]) => {
                 setWorkOrders(workOrderData);
-                setWorkers(workerData.map(normalizeWorker).filter(worker => !worker.isAdmin));
+                setWorkers(workerData.map(normalizeWorker));
+                setCompanies(companyData);
             })
             .catch(err => setError(err.message));
     }, []);
+
+    const formatStatus = (status = '') => status.replaceAll('_', ' ');
 
     const handleSort = (column) => {
         const isAsc = orderBy === column && order === 'asc';
@@ -67,65 +76,61 @@ const WorkOrderFunctions = () => {
         return 0;
     });
 
-    const updateStatus = async (workOrderID, action) => {
+    const closeCreateDialog = () => {
+        setCreateOpen(false);
+        setWorkerID('');
+        setCompanyID('');
+        setComment('');
+    };
+
+    const createWorkOrder = async () => {
+        const worker = workers.find(item => item.workerID === Number(workerID));
+        const company = companies.find(item => item.companyID === Number(companyID));
+
+        setSaving(true);
+        setError('');
         try {
-            setError('');
-            const updated = await apiFetch(`/workorders/${workOrderID}/${action}`, { method: 'PUT' });
-            setWorkOrders(current => current.map(order => (
-                order.workOrderID === workOrderID ? updated : order
-            )));
-        } catch (err) {
-            setError(err.message);
-        }
-    };
-
-    const remove = async (workOrderID) => {
-        if (!window.confirm(`Delete work order #${workOrderID}? This cannot be undone.`)) return;
-
-        try {
-            setError('');
-            await apiFetch(`/workorders/${workOrderID}`, { method: 'DELETE' });
-            setWorkOrders(current => current.filter(order => order.workOrderID !== workOrderID));
-        } catch (err) {
-            setError(err.message);
-        }
-    };
-
-    const openReassign = (workOrder) => {
-        setReassignTarget(workOrder);
-        setSelectedWorkerID(getWorkOrderWorkers(workOrder)[0]?.workerID || '');
-    };
-
-    const closeReassign = () => {
-        setReassignTarget(null);
-        setSelectedWorkerID('');
-    };
-
-    const reassign = async () => {
-        if (!reassignTarget || !selectedWorkerID) return;
-
-        try {
-            setError('');
-            const updated = await apiFetch(`/workorders/${reassignTarget.workOrderID}/assign`, {
-                method: 'PUT',
-                body: JSON.stringify({ workerID: Number(selectedWorkerID) }),
+            const created = await apiFetch('/workorders', {
+                method: 'POST',
+                body: JSON.stringify({
+                    workers: worker ? [{
+                        workerID: worker.workerID,
+                        workerFName: worker.firstName,
+                        workerLName: worker.lastName,
+                        workerUser: worker.username,
+                        admin: worker.isAdmin,
+                    }] : [],
+                    company: company || null,
+                    comment: comment.trim(),
+                }),
             });
-            setWorkOrders(current => current.map(order => (
-                order.workOrderID === updated.workOrderID ? updated : order
-            )));
-            closeReassign();
+            setWorkOrders(current => [...current, created]);
+            closeCreateDialog();
         } catch (err) {
             setError(err.message);
+        } finally {
+            setSaving(false);
         }
     };
 
-    const canViewDetails = (workOrder) => ['IN_REVIEW', 'COMPLETE'].includes(workOrder.status);
+    const openWorkOrder = (workOrder) => {
+        const assignedToUser = getWorkOrderWorkers(workOrder).some(worker => worker.workerID === user?.workerID);
+        if (assignedToUser && workOrder.status === 'IN_PROCESS') {
+            navigate(`/admin/my-workorders/${workOrder.workOrderID}`);
+            return;
+        }
+
+        navigate(`/admin/workorders/${workOrder.workOrderID}`);
+    };
 
     return (
         <Box sx={{ p: 3 }}>
-            <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold' }}>
-                Work Order Functions
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                    View Work Orders
+                </Typography>
+                <Button variant="contained" onClick={() => setCreateOpen(true)}>Create Work Order</Button>
+            </Box>
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
             <TableContainer component={Paper}>
@@ -171,8 +176,8 @@ const WorkOrderFunctions = () => {
                                     Status
                                 </TableSortLabel>
                             </TableCell>
-                            <TableCell>Started</TableCell>
-                            <TableCell>Actions</TableCell>
+                            <TableCell>Start</TableCell>
+                            <TableCell>Close</TableCell>
                         </TableRow>
                     </TableHead>
 
@@ -180,69 +185,69 @@ const WorkOrderFunctions = () => {
                         {sortedWorkOrders.map((wo) => (
                             <TableRow key={wo.workOrderID}>
                                 <TableCell>
-                                    {canViewDetails(wo) ? (
-                                        <Button
-                                            size="small"
-                                            onClick={() => navigate(`/admin/workorders/${wo.workOrderID}`)}
-                                        >
-                                            {wo.workOrderID}
-                                        </Button>
-                                    ) : (
-                                        wo.workOrderID
-                                    )}
+                                    <Button
+                                        size="small"
+                                        onClick={() => openWorkOrder(wo)}
+                                    >
+                                        {wo.workOrderID}
+                                    </Button>
                                 </TableCell>
                                 <TableCell>
                                     {getWorkOrderWorkers(wo).map(worker => `${worker.firstName} ${worker.lastName}`).join(', ') || 'Unassigned'}
                                 </TableCell>
                                 <TableCell>{wo.company?.companyName || 'Unassigned'}</TableCell>
-                                <TableCell><Chip label={wo.status} size="small" /></TableCell>
+                                <TableCell><Chip label={formatStatus(wo.status)} size="small" /></TableCell>
                                 <TableCell>{formatDateTime(wo.startDateTime)}</TableCell>
-                                <TableCell>
-                                    <Stack direction="row" spacing={1}>
-                                        {wo.status === 'OPEN' && <Button size="small" onClick={() => updateStatus(wo.workOrderID, 'start')}>Start</Button>}
-                                        {wo.status !== 'COMPLETE' && (
-                                            <Button size="small" onClick={() => openReassign(wo)}>Reassign</Button>
-                                        )}
-                                        {wo.status === 'IN_REVIEW' && (
-                                            <>
-                                                <Button size="small" onClick={() => updateStatus(wo.workOrderID, 'approve')}>Approve</Button>
-                                                <Button size="small" color="warning" onClick={() => updateStatus(wo.workOrderID, 'reject')}>Reject</Button>
-                                            </>
-                                        )}
-                                        <Button size="small" color="error" onClick={() => remove(wo.workOrderID)}>DELETE</Button>
-                                    </Stack>
-                                </TableCell>
+                                <TableCell>{formatDateTime(wo.endDateTime)}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
                 </Table>
             </TableContainer>
 
-            <Dialog open={Boolean(reassignTarget)} onClose={closeReassign} fullWidth maxWidth="xs">
-                <DialogTitle>Reassign Work Order</DialogTitle>
+            <Dialog open={createOpen} onClose={closeCreateDialog} fullWidth maxWidth="sm">
+                <DialogTitle>Create Work Order</DialogTitle>
                 <DialogContent>
                     <FormControl fullWidth margin="normal">
-                        <InputLabel>Worker</InputLabel>
-                        <Select
-                            value={selectedWorkerID}
-                            label="Worker"
-                            onChange={event => setSelectedWorkerID(event.target.value)}
-                        >
+                        <InputLabel>Worker or Admin</InputLabel>
+                        <Select value={workerID} label="Worker or Admin" onChange={event => setWorkerID(event.target.value)}>
+                            <MenuItem value="">No worker selected</MenuItem>
                             {workers.map(worker => (
                                 <MenuItem key={worker.workerID} value={worker.workerID}>
-                                    {worker.firstName} {worker.lastName}
+                                    {worker.firstName} {worker.lastName}{worker.isAdmin ? ' (Admin)' : ''}
                                 </MenuItem>
                             ))}
                         </Select>
                     </FormControl>
+
+                    <FormControl fullWidth margin="normal">
+                        <InputLabel>Company</InputLabel>
+                        <Select value={companyID} label="Company" onChange={event => setCompanyID(event.target.value)}>
+                            <MenuItem value="">No company selected</MenuItem>
+                            {companies.map(company => (
+                                <MenuItem key={company.companyID} value={company.companyID}>{company.companyName}</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+
+                    <TextField
+                        label="Comments"
+                        value={comment}
+                        onChange={event => setComment(event.target.value)}
+                        fullWidth
+                        multiline
+                        minRows={4}
+                        margin="normal"
+                    />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={closeReassign}>Cancel</Button>
-                    <Button variant="contained" onClick={reassign} disabled={!selectedWorkerID}>
-                        Save
+                    <Button onClick={closeCreateDialog}>Cancel</Button>
+                    <Button variant="contained" onClick={createWorkOrder} disabled={saving}>
+                        Create Work Order
                     </Button>
                 </DialogActions>
             </Dialog>
+
         </Box>
     );
 };

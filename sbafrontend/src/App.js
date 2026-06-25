@@ -16,6 +16,8 @@ import InspectorProfiles from './Components/InspectorProfiles';
 import ProfileTab from './Components/ProfileTab';
 import WorkOrderFunctions from './Components/WorkOrderFunctions';
 import WorkOrderDetail from './Components/WorkOrderDetail';
+import MyWorkOrders from './Components/MyWorkOrders';
+import MyWorkOrderDetail from './Components/MyWorkOrderDetail';
 
 // Worker pages
 import HomePage from './Components/HomePage';
@@ -45,6 +47,8 @@ function App() {
               <Route path="companies" element={<CompanyProfiles />} />
               <Route path="inspectors" element={<InspectorProfiles />} />
               <Route path="profile" element={<ProfileTab />} />
+              <Route path="my-workorders" element={<MyWorkOrders />} />
+              <Route path="my-workorders/:workOrderID" element={<MyWorkOrderDetail />} />
 			  <Route path="workorders" element={<WorkOrderFunctions />} />
               <Route path="workorders/:workOrderID" element={<WorkOrderDetail />} />
               <Route path="*" element={<Navigate to="/admin" replace />} />
@@ -56,6 +60,8 @@ function App() {
             <Route path="/worker" element={<HomePage />}>
               <Route index element={<div>Welcome to the Worker Dashboard</div>} />
               <Route path="assigned" element={<InspectorAssignedWork />} />
+              <Route path="my-workorders" element={<MyWorkOrders />} />
+              <Route path="my-workorders/:workOrderID" element={<MyWorkOrderDetail />} />
               <Route path="billing" element={<InspectorBillingPage />} />
               <Route path="profile" element={<ProfileTab />} />
               <Route path="*" element={<Navigate to="/worker" replace />} />

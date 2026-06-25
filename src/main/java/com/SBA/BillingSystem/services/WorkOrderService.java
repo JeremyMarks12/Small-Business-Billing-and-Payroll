@@ -7,8 +7,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.SBA.BillingSystem.entities.WorkOrder;
+import com.SBA.BillingSystem.entities.WorkOrderItem;
 import com.SBA.BillingSystem.entities.Worker;
+import com.SBA.BillingSystem.entities.Company;
 import com.SBA.BillingSystem.enums.WorkOrderStatus;
+import com.SBA.BillingSystem.repositories.CompanyRepository;
 import com.SBA.BillingSystem.repositories.WorkerRepository;
 import com.SBA.BillingSystem.repositories.WorkOrderRepository;
 
@@ -17,10 +20,12 @@ public class WorkOrderService{
 
     private final WorkOrderRepository workOrderRepository;
     private final WorkerRepository workerRepository;
+    private final CompanyRepository companyRepository;
 
-    public WorkOrderService(WorkOrderRepository workOrderRepository, WorkerRepository workerRepository) {
+    public WorkOrderService(WorkOrderRepository workOrderRepository, WorkerRepository workerRepository, CompanyRepository companyRepository) {
         this.workOrderRepository = workOrderRepository;
         this.workerRepository = workerRepository;
+        this.companyRepository = companyRepository;
     }
     
     @Transactional
@@ -50,7 +55,11 @@ public class WorkOrderService{
 
     public WorkOrder createWorkOrder(WorkOrder workOrder) {
     	workOrder.setWorkOrderID(0);
-    	workOrder.setStatus(WorkOrderStatus.OPEN);
+    	if (workOrder.getWorkers() == null || workOrder.getWorkers().isEmpty()) {
+    		workOrder.setStatus(WorkOrderStatus.OPEN);
+    	} else {
+    		workOrder.setStatus(WorkOrderStatus.IN_PROCESS);
+    	}
     	
         return workOrderRepository.save(workOrder);
     }
@@ -66,8 +75,86 @@ public class WorkOrderService{
         Worker worker = workerRepository.findById(workerID)
                 .orElseThrow(() -> new IllegalArgumentException("Worker not found"));
 
-        workOrder.getWorkers().clear();
+        boolean alreadyAssigned = workOrder.getWorkers().stream()
+                .anyMatch(assignedWorker -> assignedWorker.getWorkerID() == workerID);
+
+        if (alreadyAssigned) {
+            return workOrder;
+        }
+
         workOrder.addWorker(worker);
+        workOrder.setStatus(WorkOrderStatus.IN_PROCESS);
+
+        return workOrderRepository.save(workOrder);
+    }
+
+    @Transactional
+    public WorkOrder removeWorkerFromWorkOrder(Integer workOrderID, Integer workerID) {
+        WorkOrder workOrder = getRequiredWorkOrder(workOrderID);
+        Worker worker = workerRepository.findById(workerID)
+                .orElseThrow(() -> new IllegalArgumentException("Worker not found"));
+
+        Worker assignedWorker = workOrder.getWorkers().stream()
+                .filter(item -> item.getWorkerID() == worker.getWorkerID())
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Worker is not assigned to this work order"));
+
+        workOrder.removeWorker(assignedWorker);
+
+        if (workOrder.getWorkers().isEmpty()) {
+            workOrder.setStatus(WorkOrderStatus.OPEN);
+        }
+
+        return workOrderRepository.save(workOrder);
+    }
+
+    @Transactional
+    public WorkOrder removeCompanyFromWorkOrder(Integer workOrderID) {
+        WorkOrder workOrder = getRequiredWorkOrder(workOrderID);
+        workOrder.setCompany(null);
+
+        return workOrderRepository.save(workOrder);
+    }
+
+    @Transactional
+    public WorkOrder assignCompanyToWorkOrder(Integer workOrderID, Integer companyID) {
+        WorkOrder workOrder = getRequiredWorkOrder(workOrderID);
+        Company company = companyRepository.findById(companyID)
+                .orElseThrow(() -> new IllegalArgumentException("Company not found"));
+
+        workOrder.setCompany(company);
+
+        return workOrderRepository.save(workOrder);
+    }
+
+    @Transactional
+    public WorkOrder updateComment(Integer workOrderID, String comment) {
+        WorkOrder workOrder = getRequiredWorkOrder(workOrderID);
+        workOrder.setComment(comment);
+
+        return workOrderRepository.save(workOrder);
+    }
+
+    @Transactional
+    public WorkOrder addItem(Integer workOrderID, WorkOrderItem item) {
+        WorkOrder workOrder = getRequiredWorkOrder(workOrderID);
+        item.setWorkOrderItemID(0);
+        workOrder.addItem(item);
+
+        return workOrderRepository.save(workOrder);
+    }
+
+    @Transactional
+    public WorkOrder updateItem(Integer workOrderID, Integer itemID, WorkOrderItem request) {
+        WorkOrder workOrder = getRequiredWorkOrder(workOrderID);
+        WorkOrderItem item = workOrder.getItems().stream()
+                .filter(existingItem -> existingItem.getWorkOrderItemID() == itemID)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Work order item not found"));
+
+        item.setItemName(request.getItemName());
+        item.setQuantity(request.getQuantity());
+        item.setPrice(request.getPrice());
 
         return workOrderRepository.save(workOrder);
     }
@@ -88,8 +175,9 @@ public class WorkOrderService{
     public WorkOrder submitForReview(Integer workOrderID) {
     	WorkOrder workOrder = getRequiredWorkOrder(workOrderID);
     	
-    	if (workOrder.getStatus() != WorkOrderStatus.IN_PROCESS) {
-    		throw new IllegalStateException("Only work orders in process can be submitted");
+    	if (workOrder.getStatus() != WorkOrderStatus.IN_PROCESS &&
+    			workOrder.getStatus() != WorkOrderStatus.OPEN) {
+    		throw new IllegalStateException("Only open or in-process work orders can be submitted");
     	}
     	
     	workOrder.setStatus(WorkOrderStatus.IN_REVIEW);
