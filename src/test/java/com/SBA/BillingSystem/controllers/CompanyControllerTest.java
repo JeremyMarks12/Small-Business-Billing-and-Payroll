@@ -15,7 +15,6 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
@@ -42,7 +41,7 @@ class CompanyControllerTest {
 
     @Test
     void getAllCompaniesReturnsCompanies() throws Exception {
-        when(companyService.findAll()).thenReturn(List.of(
+        when(companyService.findActive()).thenReturn(List.of(
                 new Company("Acme", "100 Main", "555-0100", "office@acme.test")));
 
         mockMvc.perform(get("/companies/all"))
@@ -73,27 +72,26 @@ class CompanyControllerTest {
 
     @Test
     void updateCompanyUsesPathId() throws Exception {
-        when(companyService.save(any(Company.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+        Company updated = new Company("Updated", null, null, null);
+        updated.setCompanyID(7);
+        when(companyService.update(any(Integer.class), any(Company.class))).thenReturn(updated);
 
         mockMvc.perform(put("/companies/7")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"companyID": 99, "companyName": "Updated"}
-                                """))
+                """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.companyID").value(7));
 
-        ArgumentCaptor<Company> captor = ArgumentCaptor.forClass(Company.class);
-        verify(companyService).save(captor.capture());
-        org.junit.jupiter.api.Assertions.assertEquals(7, captor.getValue().getCompanyID());
+        verify(companyService).update(any(Integer.class), any(Company.class));
     }
 
     @Test
-    void deleteCompanyDelegatesToService() throws Exception {
+    void deleteCompanyArchivesThroughService() throws Exception {
         mockMvc.perform(delete("/companies/4"))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
-        verify(companyService).deleteById(4);
+        verify(companyService).archiveById(4);
     }
 }

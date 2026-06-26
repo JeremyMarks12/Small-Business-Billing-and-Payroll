@@ -3,8 +3,6 @@ package com.SBA.BillingSystem.repositories;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.time.LocalDateTime;
-
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,7 +68,7 @@ class EntityRelationshipZombiesTest {
             clearPersistenceContext();
 
             assertThat(companyRepository.findById(companyId)).isPresent();
-            assertThat(workOrderRepository.findByCompany_CompanyID(companyId)).isEmpty();
+            assertThat(workOrderRepository.findByCompany_CompanyIDAndArchivedFalse(companyId)).isEmpty();
         }
     }
 
@@ -90,7 +88,7 @@ class EntityRelationshipZombiesTest {
             WorkOrder reloaded = workOrderRepository.findById(workOrderId).orElseThrow();
 
             assertThat(reloaded.getCompany().getCompanyID()).isEqualTo(companyId);
-            assertThat(workOrderRepository.findByCompany_CompanyID(companyId))
+            assertThat(workOrderRepository.findByCompany_CompanyIDAndArchivedFalse(companyId))
                     .extracting(WorkOrder::getWorkOrderID)
                     .containsExactly(workOrderId);
         }
@@ -148,7 +146,7 @@ class EntityRelationshipZombiesTest {
             int companyId = company.getCompanyID();
             clearPersistenceContext();
 
-            assertThat(workOrderRepository.findByCompany_CompanyID(companyId))
+            assertThat(workOrderRepository.findByCompany_CompanyIDAndArchivedFalse(companyId))
                     .hasSize(3);
         }
 
@@ -244,7 +242,6 @@ class EntityRelationshipZombiesTest {
                     "receipt.pdf",
                     DocumentType.RECEIPT,
                     new byte[] { 1, 2, 3 },
-                    LocalDateTime.of(2026, 6, 22, 10, 30),
                     worker,
                     "application/pdf",
                     3);
@@ -305,7 +302,6 @@ class EntityRelationshipZombiesTest {
                     "work-order.txt",
                     DocumentType.WORK_ORDER,
                     new byte[] { 4, 5 },
-                    LocalDateTime.of(2026, 6, 22, 12, 0),
                     worker,
                     "text/plain",
                     2);
@@ -348,6 +344,7 @@ class EntityRelationshipZombiesTest {
                 "Test",
                 "Worker",
                 username,
+                username + "@test.com",
                 "encoded-password",
                 false);
     }

@@ -21,7 +21,7 @@ public class WorkerUserDetailsService implements UserDetailsService{
 	
 	@Override
 	public UserDetails loadUserByUsername(String username) {
-		Optional<Worker> result = workerRepository.findByWorkerUserIgnoreCase(username);
+		Optional<Worker> result = workerRepository.findByWorkerUserIgnoreCaseAndArchivedFalse(username);
 		
 		if(result.isEmpty()) {
 			throw new UsernameNotFoundException("Worker not found");

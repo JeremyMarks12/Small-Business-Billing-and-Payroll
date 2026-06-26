@@ -8,7 +8,11 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
   Table,
   TableBody,
   TableCell,
@@ -29,9 +33,11 @@ const money = (value) => Number(value || 0).toLocaleString(undefined, {
   currency: 'USD',
 });
 
+const ITEM_TYPES = ['LABOR', 'MATERIAL', 'OTHER'];
+
 const emptyItem = () => ({
   workOrderItemID: `new-${Date.now()}`,
-  itemType: '',
+  itemType: 'LABOR',
   itemName: '',
   quantity: 1,
   price: 0,
@@ -48,6 +54,7 @@ const MyWorkOrderDetail = () => {
   const [editingComment, setEditingComment] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordOpen, setPasswordOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
@@ -68,6 +75,7 @@ const MyWorkOrderDetail = () => {
 
   if (loading) return <Box sx={{ textAlign: 'center', mt: 8 }}><CircularProgress /></Box>;
   if (!workOrder) return <Alert severity="warning">Work order not found.</Alert>;
+  if (workOrder.archived) return <Alert severity="warning">This work order is archived and no longer appears in My Assignments.</Alert>;
 
   if (['IN_REVIEW', 'COMPLETE'].includes(workOrder.status)) {
     return <WorkOrderDetail />;
@@ -75,6 +83,25 @@ const MyWorkOrderDetail = () => {
 
   const workers = getWorkOrderWorkers(workOrder);
   const total = items.reduce((sum, item) => sum + (Number(item.quantity) * Number(item.price)), 0);
+  const itemHistory = [...items]
+    .filter(item => item.createdAt || item.lastModifiedAt)
+    .sort((a, b) => new Date(b.createdAt || b.lastModifiedAt) - new Date(a.createdAt || a.lastModifiedAt));
+  const actionLabels = {
+    items: 'Save Items',
+    comment: 'Update Comments',
+    submit: 'Submit for Review',
+  };
+
+  const requestPassword = (action) => {
+    setPendingAction(action);
+    setPassword('');
+    setPasswordOpen(true);
+  };
+
+  const verifyPassword = () => apiFetch('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ username: user.username, password }),
+  });
 
   const updateItemField = (itemID, field, value) => {
     setItems(current => current.map(item => (
@@ -86,10 +113,11 @@ const MyWorkOrderDetail = () => {
     setSaving(true);
     setMessage(null);
     try {
+      await verifyPassword();
       let updated = workOrder;
       for (const item of items) {
         const payload = {
-          itemType: item.itemType || '',
+          itemType: item.itemType || 'OTHER',
           itemName: item.itemName,
           quantity: Number(item.quantity),
           price: Number(item.price),
@@ -107,6 +135,9 @@ const MyWorkOrderDetail = () => {
       }
       setWorkOrder(updated);
       setItems(Array.isArray(updated.items) ? updated.items : []);
+      setPassword('');
+      setPasswordOpen(false);
+      setPendingAction(null);
       setMessage({ severity: 'success', text: 'Items updated.' });
     } catch (error) {
       setMessage({ severity: 'error', text: error.message });
@@ -119,12 +150,16 @@ const MyWorkOrderDetail = () => {
     setSaving(true);
     setMessage(null);
     try {
+      await verifyPassword();
       const updated = await apiFetch(`/workorders/${workOrder.workOrderID}/comment`, {
         method: 'PUT',
         body: JSON.stringify({ comment }),
       });
       setWorkOrder(updated);
       setEditingComment(false);
+      setPassword('');
+      setPasswordOpen(false);
+      setPendingAction(null);
       setMessage({ severity: 'success', text: 'Comments updated.' });
     } catch (error) {
       setMessage({ severity: 'error', text: error.message });
@@ -137,19 +172,31 @@ const MyWorkOrderDetail = () => {
     setSaving(true);
     setMessage(null);
     try {
-      await apiFetch('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ username: user.username, password }),
-      });
+      await verifyPassword();
       const updated = await apiFetch(`/workorders/${workOrder.workOrderID}/submit`, { method: 'PUT' });
       setWorkOrder(updated);
       setPassword('');
       setPasswordOpen(false);
+      setPendingAction(null);
       setMessage({ severity: 'success', text: 'Work order submitted for review.' });
     } catch (error) {
       setMessage({ severity: 'error', text: error.message });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const runPendingAction = () => {
+    if (pendingAction === 'items') {
+      saveItems();
+      return;
+    }
+    if (pendingAction === 'comment') {
+      updateComment();
+      return;
+    }
+    if (pendingAction === 'submit') {
+      submitForReview();
     }
   };
 
@@ -181,7 +228,7 @@ const MyWorkOrderDetail = () => {
         />
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
           <Button onClick={() => setEditingComment(true)}>Edit</Button>
-          <Button variant="contained" onClick={updateComment} disabled={!editingComment || saving}>Update</Button>
+          <Button variant="contained" onClick={() => requestPassword('comment')} disabled={!editingComment || saving}>Update</Button>
         </Box>
       </Paper>
 
@@ -203,11 +250,18 @@ const MyWorkOrderDetail = () => {
             {items.map(item => (
               <TableRow key={item.workOrderItemID}>
                 <TableCell>
-                  <TextField
-                    value={item.itemType || ''}
-                    onChange={event => updateItemField(item.workOrderItemID, 'itemType', event.target.value)}
-                    size="small"
-                  />
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Item Type</InputLabel>
+                    <Select
+                      value={item.itemType || 'OTHER'}
+                      label="Item Type"
+                      onChange={event => updateItemField(item.workOrderItemID, 'itemType', event.target.value)}
+                    >
+                      {ITEM_TYPES.map(type => (
+                        <MenuItem key={type} value={type}>{type}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                 </TableCell>
                 <TableCell>
                   <TextField
@@ -245,18 +299,45 @@ const MyWorkOrderDetail = () => {
         </Table>
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, p: 2 }}>
           <Button onClick={() => setItems(current => [...current, emptyItem()])}>Add Item</Button>
-          <Button variant="contained" onClick={saveItems} disabled={saving}>Save Items</Button>
+          <Button variant="contained" onClick={() => requestPassword('items')} disabled={saving}>Save Items</Button>
         </Box>
       </TableContainer>
 
+      <Typography variant="h6" sx={{ mt: 4, mb: 1 }}>Item History</Typography>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Item</TableCell>
+              <TableCell>Added</TableCell>
+              <TableCell>Last Updated</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {itemHistory.map(item => (
+              <TableRow key={`${item.workOrderItemID}-history`}>
+                <TableCell>{item.itemName || 'Unnamed item'}</TableCell>
+                <TableCell>{formatDateTime(item.createdAt)}</TableCell>
+                <TableCell>{formatDateTime(item.lastModifiedAt)}</TableCell>
+              </TableRow>
+            ))}
+            {!itemHistory.length && (
+              <TableRow>
+                <TableCell colSpan={3}>No item history has been recorded yet.</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-        <Button variant="contained" color="success" onClick={() => setPasswordOpen(true)}>
+        <Button variant="contained" color="success" onClick={() => requestPassword('submit')}>
           Submit for Review
         </Button>
       </Box>
 
       <Dialog open={passwordOpen} onClose={() => setPasswordOpen(false)} fullWidth maxWidth="xs">
-        <DialogTitle>Confirm Submission</DialogTitle>
+        <DialogTitle>Confirm Changes</DialogTitle>
         <DialogContent>
           <TextField
             label="Enter your password"
@@ -269,8 +350,8 @@ const MyWorkOrderDetail = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setPasswordOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={submitForReview} disabled={!password || saving}>
-            Submit for Review
+          <Button variant="contained" onClick={runPendingAction} disabled={!password || saving}>
+            {actionLabels[pendingAction] || 'Confirm'}
           </Button>
         </DialogActions>
       </Dialog>

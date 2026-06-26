@@ -12,30 +12,55 @@ class MockApiError extends Error {
 }
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
+const now = () => new Date().toISOString();
+
+const withAuditDefaults = (item) => ({
+  createdAt: item.createdAt || now(),
+  lastModifiedAt: item.lastModifiedAt || item.createdAt || now(),
+  archived: item.archived ?? false,
+  archivedAt: item.archivedAt ?? null,
+  ...item,
+});
+
+const withWorkerDefaults = (worker) => ({
+  workerEmail: worker.workerEmail || `${worker.workerUser || `worker${worker.workerID}`}@example.test`,
+  ...withAuditDefaults(worker),
+});
+
+const hydrateState = (rawState) => ({
+  workers: (rawState.workers || []).map(withWorkerDefaults),
+  companies: (rawState.companies || []).map(withAuditDefaults),
+  workOrders: (rawState.workOrders || []).map(order => ({
+    ...withAuditDefaults(order),
+    workers: (order.workers || []).map(withWorkerDefaults),
+    company: order.company ? withAuditDefaults(order.company) : null,
+    items: (order.items || []).map(withAuditDefaults),
+  })),
+});
 
 const loadState = () => {
   if (typeof localStorage === 'undefined') {
-    return {
+    return hydrateState({
       workers: clone(mockWorkers),
       companies: clone(mockCompanies),
       workOrders: clone(mockWorkOrders),
-    };
+    });
   }
 
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
     try {
-      return JSON.parse(saved);
+      return hydrateState(JSON.parse(saved));
     } catch (error) {
       localStorage.removeItem(STORAGE_KEY);
     }
   }
 
-  const initialState = {
+  const initialState = hydrateState({
     workers: clone(mockWorkers),
     companies: clone(mockCompanies),
     workOrders: clone(mockWorkOrders),
-  };
+  });
   localStorage.setItem(STORAGE_KEY, JSON.stringify(initialState));
   return initialState;
 };
@@ -49,6 +74,8 @@ const saveState = () => {
 };
 
 const withoutPassword = ({ workerPW, ...worker }) => worker;
+const activeOnly = (items) => items.filter(item => !item.archived);
+const archivedOnly = (items) => items.filter(item => item.archived);
 
 const nextId = (items, key) => Math.max(0, ...items.map(item => Number(item[key]) || 0)) + 1;
 
@@ -60,19 +87,40 @@ const bodyAsJson = (options) => {
 const findWorker = (workerID) => state.workers.find(worker => worker.workerID === Number(workerID));
 const findCompany = (companyID) => state.companies.find(company => company.companyID === Number(companyID));
 const findWorkOrder = (workOrderID) => state.workOrders.find(order => order.workOrderID === Number(workOrderID));
+const isOpenWorkOrder = (order) => order.status !== 'COMPLETE';
+
+const touch = (item) => {
+  item.lastModifiedAt = now();
+  return item;
+};
+
+const archiveEntity = (item) => {
+  item.archived = true;
+  item.archivedAt = now();
+  touch(item);
+  return item;
+};
+
+const restoreEntity = (item) => {
+  item.archived = false;
+  item.archivedAt = null;
+  touch(item);
+  return item;
+};
 
 const createLoginResponse = (worker) => ({
   workerID: worker.workerID,
   workerUser: worker.workerUser,
   workerFName: worker.workerFName,
   workerLName: worker.workerLName,
+  workerEmail: worker.workerEmail,
   admin: worker.admin,
 });
 
 const handleAuth = (segments, method, options) => {
   if (segments[1] === 'login' && method === 'POST') {
     const { username = '', password = '' } = bodyAsJson(options);
-    const worker = state.workers.find(item => item.workerUser === username.trim());
+    const worker = state.workers.find(item => item.workerUser === username.trim() && !item.archived);
 
     if (!worker || worker.workerPW !== password) {
       throw new MockApiError('Invalid username or password', 401);
@@ -90,18 +138,40 @@ const handleAuth = (segments, method, options) => {
 
 const handleWorkers = (segments, method, options) => {
   if (segments.length === 1 && method === 'GET') {
+    return activeOnly(state.workers).map(withoutPassword);
+  }
+
+  if (segments[1] === 'all-with-archived' && method === 'GET') {
     return state.workers.map(withoutPassword);
+  }
+
+  if (segments[1] === 'archived' && method === 'GET') {
+    return archivedOnly(state.workers).map(withoutPassword);
   }
 
   if (segments.length === 1 && method === 'POST') {
     const payload = bodyAsJson(options);
+    if (!payload.workerFName || !payload.workerLName || !payload.workerUser || !payload.workerEmail) {
+      throw new MockApiError('Worker name, username, and email are required', 400);
+    }
+    if (state.workers.some(worker => worker.workerUser?.toLowerCase() === payload.workerUser.toLowerCase())) {
+      throw new MockApiError('Username already exists', 409);
+    }
+    if (state.workers.some(worker => worker.workerEmail?.toLowerCase() === payload.workerEmail.toLowerCase())) {
+      throw new MockApiError('Email already exists', 409);
+    }
     const worker = {
       workerID: nextId(state.workers, 'workerID'),
       workerFName: payload.workerFName,
       workerLName: payload.workerLName,
       workerUser: payload.workerUser,
+      workerEmail: payload.workerEmail,
       workerPW: payload.workerPW,
       admin: Boolean(payload.admin),
+      createdAt: now(),
+      lastModifiedAt: now(),
+      archived: false,
+      archivedAt: null,
     };
     state.workers.push(worker);
     saveState();
@@ -117,18 +187,68 @@ const handleWorkers = (segments, method, options) => {
   }
 
   if (segments.length === 2 && method === 'DELETE') {
-    state.workers = state.workers.filter(item => item.workerID !== Number(workerID));
-    state.workOrders = state.workOrders.map(order => ({
-      ...order,
-      workers: order.workers.filter(item => item.workerID !== Number(workerID)),
-    }));
+    const hasOpenWorkOrders = state.workOrders.some(order =>
+      isOpenWorkOrder(order) && order.workers.some(item => item.workerID === worker.workerID)
+    );
+
+    if (hasOpenWorkOrders) {
+      throw new MockApiError('Worker cannot be archived while assigned to open work orders', 409);
+    }
+
+    archiveEntity(worker);
     saveState();
     return null;
+  }
+
+  if (segments[2] === 'restore' && method === 'PUT') {
+    restoreEntity(worker);
+    saveState();
+    return withoutPassword(worker);
+  }
+
+  if (segments[2] === 'permanent' && method === 'DELETE') {
+    if (!worker.archived) {
+      throw new MockApiError('Only archived workers can be permanently deleted', 409);
+    }
+
+    state.workOrders = state.workOrders.map(order => ({
+      ...order,
+      workers: order.workers.filter(item => item.workerID !== worker.workerID),
+    }));
+    state.workers = state.workers.filter(item => item.workerID !== worker.workerID);
+    saveState();
+    return null;
+  }
+
+  if (segments.length === 2 && method === 'PUT') {
+    const payload = bodyAsJson(options);
+    if (payload.workerEmail && state.workers.some(item =>
+      item.workerID !== worker.workerID && item.workerEmail?.toLowerCase() === payload.workerEmail.toLowerCase()
+    )) {
+      throw new MockApiError('Email already exists', 409);
+    }
+    Object.assign(worker, {
+      workerFName: payload.workerFName ?? worker.workerFName,
+      workerLName: payload.workerLName ?? worker.workerLName,
+      workerUser: payload.workerUser ?? worker.workerUser,
+      workerEmail: payload.workerEmail ?? worker.workerEmail,
+      admin: payload.admin ?? worker.admin,
+    });
+    touch(worker);
+    state.workOrders = state.workOrders.map(order => ({
+      ...order,
+      workers: order.workers.map(item => (
+        item.workerID === worker.workerID ? withoutPassword(worker) : item
+      )),
+    }));
+    saveState();
+    return withoutPassword(worker);
   }
 
   if (segments[2] === 'password' && method === 'PUT') {
     const { newPassword } = bodyAsJson(options);
     worker.workerPW = newPassword;
+    touch(worker);
     saveState();
     return null;
   }
@@ -137,8 +257,16 @@ const handleWorkers = (segments, method, options) => {
 };
 
 const handleCompanies = (segments, method, options) => {
-  if (segments[1] === 'all' && method === 'GET') {
+  if ((segments.length === 1 || segments[1] === 'all') && method === 'GET') {
+    return activeOnly(state.companies);
+  }
+
+  if (segments[1] === 'all-with-archived' && method === 'GET') {
     return state.companies;
+  }
+
+  if (segments[1] === 'archived' && method === 'GET') {
+    return archivedOnly(state.companies);
   }
 
   if (segments[1] === 'add' && method === 'POST') {
@@ -146,6 +274,10 @@ const handleCompanies = (segments, method, options) => {
     const company = {
       ...payload,
       companyID: nextId(state.companies, 'companyID'),
+      createdAt: now(),
+      lastModifiedAt: now(),
+      archived: false,
+      archivedAt: null,
     };
     state.companies.push(company);
     saveState();
@@ -159,6 +291,7 @@ const handleCompanies = (segments, method, options) => {
   if (segments.length === 2 && method === 'PUT') {
     const payload = bodyAsJson(options);
     Object.assign(company, payload, { companyID: Number(companyID) });
+    touch(company);
     state.workOrders = state.workOrders.map(order => (
       order.company?.companyID === Number(companyID) ? { ...order, company: clone(company) } : order
     ));
@@ -167,10 +300,34 @@ const handleCompanies = (segments, method, options) => {
   }
 
   if (segments.length === 2 && method === 'DELETE') {
-    state.companies = state.companies.filter(item => item.companyID !== Number(companyID));
+    const hasOpenWorkOrders = state.workOrders.some(order =>
+      isOpenWorkOrder(order) && order.company?.companyID === company.companyID
+    );
+
+    if (hasOpenWorkOrders) {
+      throw new MockApiError('Company cannot be archived while associated with open work orders', 409);
+    }
+
+    archiveEntity(company);
+    saveState();
+    return null;
+  }
+
+  if (segments[2] === 'restore' && method === 'PUT') {
+    restoreEntity(company);
+    saveState();
+    return company;
+  }
+
+  if (segments[2] === 'permanent' && method === 'DELETE') {
+    if (!company.archived) {
+      throw new MockApiError('Only archived companies can be permanently deleted', 409);
+    }
+
     state.workOrders = state.workOrders.map(order => (
       order.company?.companyID === Number(companyID) ? { ...order, company: null } : order
     ));
+    state.companies = state.companies.filter(item => item.companyID !== company.companyID);
     saveState();
     return null;
   }
@@ -180,6 +337,7 @@ const handleCompanies = (segments, method, options) => {
 
 const setWorkOrderStatus = (workOrder, status) => {
   workOrder.status = status;
+  touch(workOrder);
   if (status === 'COMPLETE') {
     workOrder.endDateTime = new Date().toISOString();
   }
@@ -192,26 +350,45 @@ const setWorkOrderStatus = (workOrder, status) => {
 
 const handleWorkOrders = (segments, method, options) => {
   if (segments.length === 1 && method === 'GET') {
+    return activeOnly(state.workOrders);
+  }
+
+  if (segments[1] === 'all-with-archived' && method === 'GET') {
     return state.workOrders;
   }
 
+  if (segments[1] === 'archived' && method === 'GET') {
+    return archivedOnly(state.workOrders);
+  }
+
   if (segments[1] === 'count' && method === 'GET') {
-    return state.workOrders.length;
+    return activeOnly(state.workOrders).length;
   }
 
   if (segments.length === 1 && method === 'POST') {
     const payload = bodyAsJson(options);
     const workerRefs = Array.isArray(payload.workers) ? payload.workers : [];
     const company = payload.company?.companyID ? findCompany(payload.company.companyID) : payload.company;
+    if (company?.archived) {
+      throw new MockApiError('Archived companies cannot be assigned', 409);
+    }
+    const assignedWorkers = workerRefs
+      .map(worker => findWorker(worker.workerID))
+      .filter(worker => worker && !worker.archived)
+      .map(withoutPassword);
     const workOrder = {
       workOrderID: nextId(state.workOrders, 'workOrderID'),
-      workers: workerRefs.map(worker => findWorker(worker.workerID)).filter(Boolean).map(withoutPassword),
+      workers: assignedWorkers,
       company: company ? clone(company) : null,
-      status: workerRefs.length ? 'IN_PROCESS' : 'OPEN',
+      status: assignedWorkers.length ? 'IN_PROCESS' : 'OPEN',
       startDateTime: new Date().toISOString(),
       endDateTime: null,
       comment: payload.comment || '',
       items: [],
+      createdAt: now(),
+      lastModifiedAt: now(),
+      archived: false,
+      archivedAt: null,
     };
     state.workOrders.push(workOrder);
     saveState();
@@ -220,7 +397,7 @@ const handleWorkOrders = (segments, method, options) => {
 
   if (segments[1] === 'company' && method === 'GET') {
     const companyID = Number(segments[2]);
-    return state.workOrders.filter(order => order.company?.companyID === companyID);
+    return activeOnly(state.workOrders).filter(order => order.company?.companyID === companyID);
   }
 
   const workOrderID = segments[1];
@@ -232,7 +409,33 @@ const handleWorkOrders = (segments, method, options) => {
   }
 
   if (segments.length === 2 && method === 'DELETE') {
-    state.workOrders = state.workOrders.filter(order => order.workOrderID !== Number(workOrderID));
+    if (workOrder.status !== 'COMPLETE') {
+      throw new MockApiError('Only completed work orders can be archived', 409);
+    }
+
+    archiveEntity(workOrder);
+    saveState();
+    return null;
+  }
+
+  if (segments[2] === 'force-archive' && method === 'PUT') {
+    archiveEntity(workOrder);
+    saveState();
+    return null;
+  }
+
+  if (segments[2] === 'restore' && method === 'PUT') {
+    restoreEntity(workOrder);
+    saveState();
+    return workOrder;
+  }
+
+  if (segments[2] === 'permanent' && method === 'DELETE') {
+    if (!workOrder.archived) {
+      throw new MockApiError('Only archived work orders can be permanently deleted', 409);
+    }
+
+    state.workOrders = state.workOrders.filter(item => item.workOrderID !== workOrder.workOrderID);
     saveState();
     return null;
   }
@@ -244,12 +447,14 @@ const handleWorkOrders = (segments, method, options) => {
       workOrder.status = 'OPEN';
       workOrder.endDateTime = null;
     }
+    touch(workOrder);
     saveState();
     return workOrder;
   }
 
   if (segments[2] === 'company' && method === 'DELETE') {
     workOrder.company = null;
+    touch(workOrder);
     saveState();
     return workOrder;
   }
@@ -260,8 +465,12 @@ const handleWorkOrders = (segments, method, options) => {
     if (!company) {
       throw new MockApiError('Company not found', 404);
     }
+    if (company.archived) {
+      throw new MockApiError('Archived companies cannot be assigned', 409);
+    }
 
     workOrder.company = clone(company);
+    touch(workOrder);
     saveState();
     return workOrder;
   }
@@ -269,6 +478,7 @@ const handleWorkOrders = (segments, method, options) => {
   if (segments[2] === 'comment' && method === 'PUT') {
     const { comment = '' } = bodyAsJson(options);
     workOrder.comment = comment;
+    touch(workOrder);
     saveState();
     return workOrder;
   }
@@ -277,12 +487,15 @@ const handleWorkOrders = (segments, method, options) => {
     const payload = bodyAsJson(options);
     const item = {
       workOrderItemID: nextId(workOrder.items || [], 'workOrderItemID'),
-      itemType: payload.itemType || '',
       itemName: payload.itemName || '',
       quantity: Number(payload.quantity) || 0,
       price: Number(payload.price) || 0,
+      itemType: payload.itemType || 'OTHER',
+      createdAt: now(),
+      lastModifiedAt: now(),
     };
     workOrder.items = [...(workOrder.items || []), item];
+    touch(workOrder);
     saveState();
     return workOrder;
   }
@@ -294,13 +507,14 @@ const handleWorkOrders = (segments, method, options) => {
       item.workOrderItemID === itemID
         ? {
             ...item,
-            itemType: payload.itemType || '',
+            itemType: payload.itemType || item.itemType || 'OTHER',
             itemName: payload.itemName || '',
             quantity: Number(payload.quantity) || 0,
             price: Number(payload.price) || 0,
           }
         : item
     ));
+    touch(workOrder);
     saveState();
     return workOrder;
   }
@@ -320,12 +534,16 @@ const handleWorkOrders = (segments, method, options) => {
     if (!worker) {
       throw new MockApiError('Worker not found', 404);
     }
+    if (worker.archived) {
+      throw new MockApiError('Archived workers cannot be assigned', 409);
+    }
 
     if (!workOrder.workers.some(item => item.workerID === worker.workerID)) {
       workOrder.workers = [...workOrder.workers, withoutPassword(worker)];
     }
     workOrder.status = 'IN_PROCESS';
     workOrder.endDateTime = null;
+    touch(workOrder);
     saveState();
     return workOrder;
   }
@@ -346,11 +564,11 @@ const handleWorkOrders = (segments, method, options) => {
 };
 
 export const resetMockApiState = () => {
-  state = {
+  state = hydrateState({
     workers: clone(mockWorkers),
     companies: clone(mockCompanies),
     workOrders: clone(mockWorkOrders),
-  };
+  });
   saveState();
 };
 

@@ -46,7 +46,7 @@ class WorkOrderControllerTest {
     @Test
     void getAllAndCompanyWorkOrdersReturnServiceResults() throws Exception {
         WorkOrder workOrder = order(1, WorkOrderStatus.OPEN);
-        when(workOrderService.findAll()).thenReturn(List.of(workOrder));
+        when(workOrderService.findActive()).thenReturn(List.of(workOrder));
         when(workOrderService.findByCompanyID(5)).thenReturn(List.of(workOrder));
 
         mockMvc.perform(get("/workorders"))
@@ -81,9 +81,12 @@ class WorkOrderControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.workOrderID").value(2));
         mockMvc.perform(delete("/workorders/2"))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
+        mockMvc.perform(put("/workorders/2/force-archive"))
+                .andExpect(status().isNoContent());
 
-        verify(workOrderService).deleteById(2);
+        verify(workOrderService).archiveById(2);
+        verify(workOrderService).forceArchiveById(2);
     }
 
     @Test

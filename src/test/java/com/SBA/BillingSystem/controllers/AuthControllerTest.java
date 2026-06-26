@@ -66,7 +66,7 @@ class AuthControllerTest {
 
     @Test
     void loginAuthenticatesAndReturnsWorkerProfile() throws Exception {
-        Worker worker = new Worker("Pat", "Lee", "plee", "hidden", true);
+        Worker worker = new Worker("Pat", "Lee", "plee", "plee@test.com", "hidden", true);
         worker.setWorkerID(7);
         when(authenticationManager.authenticate(any())).thenReturn(authentication);
         when(authentication.getName()).thenReturn("plee");

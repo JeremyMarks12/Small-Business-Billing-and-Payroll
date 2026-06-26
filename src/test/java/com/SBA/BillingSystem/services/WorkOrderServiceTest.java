@@ -21,6 +21,7 @@ import com.SBA.BillingSystem.entities.Company;
 import com.SBA.BillingSystem.entities.WorkOrder;
 import com.SBA.BillingSystem.entities.WorkOrderItem;
 import com.SBA.BillingSystem.entities.Worker;
+import com.SBA.BillingSystem.enums.ItemType;
 import com.SBA.BillingSystem.enums.WorkOrderStatus;
 import com.SBA.BillingSystem.repositories.CompanyRepository;
 import com.SBA.BillingSystem.repositories.WorkerRepository;
@@ -58,7 +59,10 @@ public class WorkOrderServiceTest {
     @Test
     void createWorkOrderSetsInProcessWhenWorkerIsAssigned() {
         WorkOrder workOrder = new WorkOrder();
-        workOrder.addWorker(new Worker());
+        Worker worker = new Worker();
+        worker.setWorkerID(1);
+        workOrder.addWorker(worker);
+        when(workerRepository.findById(1)).thenReturn(Optional.of(worker));
         when(workOrderRepository.save(workOrder)).thenReturn(workOrder);
 
         WorkOrder result = workOrderService.createWorkOrder(workOrder);
@@ -73,8 +77,8 @@ public class WorkOrderServiceTest {
         List<WorkOrder> workOrders = List.of(workOrder);
         when(workOrderRepository.findById(1)).thenReturn(Optional.of(workOrder));
         when(workOrderRepository.findAll()).thenReturn(workOrders);
-        when(workOrderRepository.findByCompany_CompanyID(2)).thenReturn(workOrders);
-        when(workOrderRepository.count()).thenReturn(1L);
+        when(workOrderRepository.findByCompany_CompanyIDAndArchivedFalse(2)).thenReturn(workOrders);
+        when(workOrderRepository.countByArchivedFalse()).thenReturn(1L);
 
         assertEquals(Optional.of(workOrder), workOrderService.findById(1));
         assertSame(workOrders, workOrderService.findAll());
@@ -132,12 +136,14 @@ public class WorkOrderServiceTest {
         item.setItemName("Inspection");
         item.setQuantity(1);
         item.setPrice(100);
+        item.setItemType(ItemType.LABOR);
         when(workOrderRepository.findById(1)).thenReturn(Optional.of(workOrder));
         when(workOrderRepository.save(workOrder)).thenReturn(workOrder);
 
         workOrderService.addItem(1, item);
 
         assertEquals(1, workOrder.getItems().size());
+        assertEquals(ItemType.LABOR, item.getItemType());
         assertSame(workOrder, item.getWorkOrder());
     }
 
@@ -182,17 +188,60 @@ public class WorkOrderServiceTest {
         assertThrows(IllegalArgumentException.class,
                 () -> workOrderService.startWorkOrder(99));
         assertThrows(IllegalArgumentException.class,
-                () -> workOrderService.deleteById(99));
+                () -> workOrderService.archiveById(99));
     }
 
     @Test
-    void deleteByIdDeletesFoundWorkOrder() {
+    void archiveByIdMarksFoundWorkOrderArchived() {
+        WorkOrder workOrder = orderWithStatus(WorkOrderStatus.COMPLETE);
+        when(workOrderRepository.findById(1)).thenReturn(Optional.of(workOrder));
+
+        workOrderService.archiveById(1);
+
+        assertEquals(true, workOrder.isArchived());
+        verify(workOrderRepository).save(workOrder);
+    }
+
+    @Test
+    void archiveByIdRejectsIncompleteWorkOrder() {
+        WorkOrder workOrder = orderWithStatus(WorkOrderStatus.IN_PROCESS);
+        when(workOrderRepository.findById(1)).thenReturn(Optional.of(workOrder));
+
+        assertThrows(IllegalStateException.class, () -> workOrderService.archiveById(1));
+        verify(workOrderRepository, never()).save(workOrder);
+    }
+
+    @Test
+    void forceArchiveByIdArchivesIncompleteWorkOrder() {
+        WorkOrder workOrder = orderWithStatus(WorkOrderStatus.OPEN);
+        when(workOrderRepository.findById(1)).thenReturn(Optional.of(workOrder));
+
+        workOrderService.forceArchiveById(1);
+
+        assertEquals(true, workOrder.isArchived());
+        verify(workOrderRepository).save(workOrder);
+    }
+
+    @Test
+    void deletePermanentlyByIdRemovesArchivedWorkOrder() {
+        WorkOrder workOrder = new WorkOrder();
+        workOrder.setArchived(true);
+        Worker worker = new Worker();
+        workOrder.addWorker(worker);
+        when(workOrderRepository.findById(1)).thenReturn(Optional.of(workOrder));
+
+        workOrderService.deletePermanentlyById(1);
+
+        assertEquals(0, worker.getWorkOrders().size());
+        verify(workOrderRepository).delete(workOrder);
+    }
+
+    @Test
+    void deletePermanentlyByIdRejectsActiveWorkOrder() {
         WorkOrder workOrder = new WorkOrder();
         when(workOrderRepository.findById(1)).thenReturn(Optional.of(workOrder));
 
-        workOrderService.deleteById(1);
-
-        verify(workOrderRepository).delete(workOrder);
+        assertThrows(IllegalStateException.class, () -> workOrderService.deletePermanentlyById(1));
     }
 
     @Test

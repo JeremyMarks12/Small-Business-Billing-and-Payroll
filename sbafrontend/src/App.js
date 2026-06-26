@@ -9,15 +9,21 @@ import UnauthorizedPage from './Components/UnauthorizedPage';
 
 // Admin pages
 import AdminHomePage from './Components/AdminHomePage';
-import AssignWork from './Components/AssignWork';
-import AdminViewWork from './Components/AdminViewWork';
-import CompanyProfiles from './Components/CompanyProfiles';
-import InspectorProfiles from './Components/InspectorProfiles';
-import ProfileTab from './Components/ProfileTab';
-import WorkOrderFunctions from './Components/WorkOrderFunctions';
+import ManageWorkOrders from './Components/ManageWorkOrders';
+import ActiveCompanies from './Components/ActiveCompanies';
+import ManageCompanies from './Components/ManageCompanies';
+import CompanySummary from './Components/CompanySummary';
+import ActiveWorkers from './Components/ActiveWorkers';
+import ManageWorkers from './Components/ManageWorkers';
+import WorkerSummary from './Components/WorkerSummary';
+import Settings from './Components/Settings';
+import WorkOrders from './Components/WorkOrders';
 import WorkOrderDetail from './Components/WorkOrderDetail';
-import MyWorkOrders from './Components/MyWorkOrders';
+import MyAssignments from './Components/MyAssignments';
 import MyWorkOrderDetail from './Components/MyWorkOrderDetail';
+import ArchivedWorkOrders from './Components/ArchivedWorkOrders';
+import ArchivedCompanies from './Components/ArchivedCompanies';
+import ArchivedWorkers from './Components/ArchivedWorkers';
 
 // Worker pages
 import HomePage from './Components/HomePage';
@@ -42,14 +48,22 @@ function App() {
           <Route element={<AdminRoute />}>
             <Route path="/admin" element={<AdminHomePage />}>
               <Route index element={<div>Welcome to the Admin Dashboard</div>} />
-              <Route path="assign" element={<AssignWork />} />
-              <Route path="viewwork" element={<AdminViewWork />} />
-              <Route path="companies" element={<CompanyProfiles />} />
-              <Route path="inspectors" element={<InspectorProfiles />} />
-              <Route path="profile" element={<ProfileTab />} />
-              <Route path="my-workorders" element={<MyWorkOrders />} />
-              <Route path="my-workorders/:workOrderID" element={<MyWorkOrderDetail />} />
-			  <Route path="workorders" element={<WorkOrderFunctions />} />
+              <Route path="manage-workorders" element={<ManageWorkOrders />} />
+              <Route path="companies" element={<ActiveCompanies />} />
+              <Route path="manage-companies" element={<ManageCompanies />} />
+              <Route path="manage-companies/:companyID" element={<ManageCompanies />} />
+              <Route path="companies/:companyID" element={<CompanySummary />} />
+              <Route path="workers" element={<ActiveWorkers />} />
+              <Route path="manage-workers" element={<ManageWorkers />} />
+              <Route path="manage-workers/:workerID" element={<ManageWorkers />} />
+              <Route path="workers/:workerID" element={<WorkerSummary />} />
+              <Route path="archive/workorders" element={<ArchivedWorkOrders />} />
+              <Route path="archive/companies" element={<ArchivedCompanies />} />
+              <Route path="archive/workers" element={<ArchivedWorkers />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="my-assignments" element={<MyAssignments />} />
+              <Route path="my-assignments/:workOrderID" element={<MyWorkOrderDetail />} />
+			  <Route path="workorders" element={<WorkOrders />} />
               <Route path="workorders/:workOrderID" element={<WorkOrderDetail />} />
               <Route path="*" element={<Navigate to="/admin" replace />} />
             </Route>
@@ -60,10 +74,10 @@ function App() {
             <Route path="/worker" element={<HomePage />}>
               <Route index element={<div>Welcome to the Worker Dashboard</div>} />
               <Route path="assigned" element={<InspectorAssignedWork />} />
-              <Route path="my-workorders" element={<MyWorkOrders />} />
-              <Route path="my-workorders/:workOrderID" element={<MyWorkOrderDetail />} />
+              <Route path="my-assignments" element={<MyAssignments />} />
+              <Route path="my-assignments/:workOrderID" element={<MyWorkOrderDetail />} />
               <Route path="billing" element={<InspectorBillingPage />} />
-              <Route path="profile" element={<ProfileTab />} />
+              <Route path="settings" element={<Settings />} />
               <Route path="*" element={<Navigate to="/worker" replace />} />
             </Route>
           </Route>

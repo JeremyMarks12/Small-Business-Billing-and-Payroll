@@ -2,8 +2,6 @@ package com.SBA.BillingSystem.repositories;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.LocalDateTime;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -29,12 +27,11 @@ class WODocumentRepositoryTest {
     void saveAndFindByIdPersistsDocumentMetadataAndRelationships() {
         WorkOrder workOrder = workOrderRepository.saveAndFlush(new WorkOrder());
         Worker worker = workerRepository.saveAndFlush(
-                new Worker("Pat", "Lee", "plee", "encoded-password", false));
+                new Worker("Pat", "Lee", "plee", "plee@test.com", "encoded-password", false));
         byte[] data = { 1, 2, 3 };
-        LocalDateTime uploadedAt = LocalDateTime.of(2026, 6, 22, 10, 30);
         WorkOrderDocument document = new WorkOrderDocument(
                 workOrder, "receipt.pdf", DocumentType.RECEIPT, data,
-                uploadedAt, worker, "application/pdf", data.length);
+                worker, "application/pdf", data.length);
 
         WorkOrderDocument saved = documentRepository.saveAndFlush(document);
 
@@ -59,7 +56,7 @@ class WODocumentRepositoryTest {
         WorkOrderDocument saved = documentRepository.saveAndFlush(
                 new WorkOrderDocument(
                         workOrder, "note.txt", DocumentType.OTHER, new byte[] { 1 },
-                        LocalDateTime.now(), null, "text/plain", 1));
+                        null, "text/plain", 1));
 
         documentRepository.deleteById(saved.getDocumentID());
         documentRepository.flush();

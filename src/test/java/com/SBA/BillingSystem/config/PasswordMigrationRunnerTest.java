@@ -27,7 +27,7 @@ class PasswordMigrationRunnerTest {
 
     @Test
     void runEncodesAndSavesPlainTextPasswords() {
-        Worker worker = new Worker("Pat", "Lee", "plee", "plain-password", false);
+        Worker worker = new Worker("Pat", "Lee", "plee", "plee@test.com", "plain-password", false);
         when(workerRepository.findAll()).thenReturn(List.of(worker));
         when(passwordEncoder.encode("plain-password")).thenReturn("$2a$encoded");
         PasswordMigrationRunner runner =
@@ -42,9 +42,9 @@ class PasswordMigrationRunnerTest {
 
     @Test
     void runDoesNotReencodeBcryptPasswords() {
-        Worker workerA = new Worker("A", "Worker", "workerA", "$2a$existing", false);
-        Worker workerB = new Worker("B", "Worker", "workerB", "$2b$existing", false);
-        Worker workerY = new Worker("Y", "Worker", "workerY", "$2y$existing", false);
+        Worker workerA = new Worker("A", "Worker", "workerA", "workerA@test.com", "$2a$existing", false);
+        Worker workerB = new Worker("B", "Worker", "workerB", "workerB@test.com", "$2b$existing", false);
+        Worker workerY = new Worker("Y", "Worker", "workerY", "workerY@test.com", "$2y$existing", false);
         when(workerRepository.findAll()).thenReturn(List.of(workerA, workerB, workerY));
         PasswordMigrationRunner runner =
                 new PasswordMigrationRunner(workerRepository, passwordEncoder);

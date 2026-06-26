@@ -6,17 +6,20 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 import org.junit.jupiter.api.Test;
 
+import com.SBA.BillingSystem.enums.ItemType;
+
 class WorkOrderItemTest {
 
     @Test
     void constructorSetsItemDetails() {
         WorkOrder workOrder = new WorkOrder();
-        WorkOrderItem item = new WorkOrderItem("Replacement valve", 3, 24.99, workOrder);
+        WorkOrderItem item = new WorkOrderItem("Replacement valve", 3, 24.99, ItemType.MATERIAL, workOrder);
 
         assertAll(
                 () -> assertEquals("Replacement valve", item.getItemName()),
                 () -> assertEquals(3, item.getQuantity()),
                 () -> assertEquals(24.99, item.getPrice()),
+                () -> assertEquals(ItemType.MATERIAL, item.getItemType()),
                 () -> assertSame(workOrder, item.getWorkOrder()));
     }
 
@@ -29,6 +32,7 @@ class WorkOrderItemTest {
         item.setItemName("Labor");
         item.setQuantity(2);
         item.setPrice(85.50);
+        item.setItemType(ItemType.LABOR);
         item.setWorkOrder(workOrder);
 
         assertAll(
@@ -36,6 +40,7 @@ class WorkOrderItemTest {
                 () -> assertEquals("Labor", item.getItemName()),
                 () -> assertEquals(2, item.getQuantity()),
                 () -> assertEquals(85.50, item.getPrice()),
+                () -> assertEquals(ItemType.LABOR, item.getItemType()),
                 () -> assertSame(workOrder, item.getWorkOrder()));
     }
 }

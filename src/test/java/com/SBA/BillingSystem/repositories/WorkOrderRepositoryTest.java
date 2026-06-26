@@ -31,13 +31,25 @@ class WorkOrderRepositoryTest {
         secondOrder.setCompany(secondCompany);
         workOrderRepository.saveAllAndFlush(java.util.List.of(firstOrder, secondOrder));
 
-        assertThat(workOrderRepository.findByCompany_CompanyID(firstCompany.getCompanyID()))
+        assertThat(workOrderRepository.findByCompany_CompanyIDAndArchivedFalse(firstCompany.getCompanyID()))
                 .containsExactly(firstOrder);
     }
 
     @Test
     void findByCompanyIdReturnsEmptyListForUnknownCompany() {
-        assertThat(workOrderRepository.findByCompany_CompanyID(999)).isEmpty();
+        assertThat(workOrderRepository.findByCompany_CompanyIDAndArchivedFalse(999)).isEmpty();
+    }
+
+    @Test
+    void archiveQueriesSeparateActiveAndArchivedOrders() {
+        WorkOrder active = new WorkOrder();
+        WorkOrder archived = new WorkOrder();
+        archived.setArchived(true);
+        workOrderRepository.saveAllAndFlush(java.util.List.of(active, archived));
+
+        assertThat(workOrderRepository.findByArchivedFalse()).contains(active).doesNotContain(archived);
+        assertThat(workOrderRepository.findByArchivedTrue()).contains(archived).doesNotContain(active);
+        assertThat(workOrderRepository.countByArchivedFalse()).isEqualTo(1);
     }
 
     @Test

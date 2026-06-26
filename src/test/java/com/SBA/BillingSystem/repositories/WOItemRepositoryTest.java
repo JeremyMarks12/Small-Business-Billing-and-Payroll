@@ -8,6 +8,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import com.SBA.BillingSystem.entities.WorkOrder;
 import com.SBA.BillingSystem.entities.WorkOrderItem;
+import com.SBA.BillingSystem.enums.ItemType;
 
 @DataJpaTest
 class WOItemRepositoryTest {
@@ -22,7 +23,7 @@ class WOItemRepositoryTest {
     void saveAndFindByIdPersistsItemAndWorkOrderRelationship() {
         WorkOrder workOrder = workOrderRepository.saveAndFlush(new WorkOrder());
         WorkOrderItem item =
-                new WorkOrderItem("Replacement valve", 2, 24.99, workOrder);
+                new WorkOrderItem("Replacement valve", 2, 24.99, ItemType.MATERIAL, workOrder);
 
         WorkOrderItem saved = itemRepository.saveAndFlush(item);
 
@@ -32,6 +33,7 @@ class WOItemRepositoryTest {
                     assertThat(found.getItemName()).isEqualTo("Replacement valve");
                     assertThat(found.getQuantity()).isEqualTo(2);
                     assertThat(found.getPrice()).isEqualTo(24.99);
+                    assertThat(found.getItemType()).isEqualTo(ItemType.MATERIAL);
                     assertThat(found.getWorkOrder().getWorkOrderID())
                             .isEqualTo(workOrder.getWorkOrderID());
                 });
@@ -41,7 +43,7 @@ class WOItemRepositoryTest {
     void deleteByIdRemovesItem() {
         WorkOrder workOrder = workOrderRepository.saveAndFlush(new WorkOrder());
         WorkOrderItem saved = itemRepository.saveAndFlush(
-                new WorkOrderItem("Labor", 1, 85.00, workOrder));
+                new WorkOrderItem("Labor", 1, 85.00, ItemType.LABOR, workOrder));
 
         itemRepository.deleteById(saved.getWorkOrderItemID());
         itemRepository.flush();

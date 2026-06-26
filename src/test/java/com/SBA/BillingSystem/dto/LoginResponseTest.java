@@ -11,13 +11,14 @@ class LoginResponseTest {
     @Test
     void constructorStoresWorkerInformation() {
         LoginResponse response =
-                new LoginResponse(7, "plee", "Pat", "Lee", true);
+                new LoginResponse(7, "plee", "Pat", "Lee", "plee@test.com", true);
 
         assertAll(
                 () -> assertEquals(7, response.getWorkerID()),
                 () -> assertEquals("plee", response.getWorkerUser()),
                 () -> assertEquals("Pat", response.getWorkerFName()),
                 () -> assertEquals("Lee", response.getWorkerLName()),
+                () -> assertEquals("plee@test.com", response.getWorkerEmail()),
                 () -> assertTrue(response.isAdmin()));
     }
 }

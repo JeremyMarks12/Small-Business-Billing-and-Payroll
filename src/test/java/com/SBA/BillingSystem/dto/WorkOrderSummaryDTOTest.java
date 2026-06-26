@@ -15,6 +15,9 @@ class WorkOrderSummaryDTOTest {
     void constructorStoresSummaryInformation() {
         LocalDateTime start = LocalDateTime.of(2026, 6, 22, 9, 0);
         LocalDateTime end = LocalDateTime.of(2026, 6, 22, 11, 30);
+        LocalDateTime created = LocalDateTime.of(2026, 6, 20, 8, 0);
+        LocalDateTime modified = LocalDateTime.of(2026, 6, 21, 8, 0);
+        LocalDateTime archivedAt = LocalDateTime.of(2026, 6, 23, 8, 0);
 
         WorkOrderSummaryDTO summary = new WorkOrderSummaryDTO(
                 12,
@@ -24,6 +27,10 @@ class WorkOrderSummaryDTOTest {
                 WorkOrderStatus.COMPLETE,
                 start,
                 end,
+                created,
+                modified,
+                true,
+                archivedAt,
                 "Job completed",
                 149.99,
                 3);
@@ -36,6 +43,10 @@ class WorkOrderSummaryDTOTest {
                 () -> assertEquals(WorkOrderStatus.COMPLETE, summary.getStatus()),
                 () -> assertEquals(start, summary.getStartDateTime()),
                 () -> assertEquals(end, summary.getEndDateTime()),
+                () -> assertEquals(created, summary.getCreatedAt()),
+                () -> assertEquals(modified, summary.getLastModifiedAt()),
+                () -> assertEquals(true, summary.isArchived()),
+                () -> assertEquals(archivedAt, summary.getArchivedAt()),
                 () -> assertEquals("Job completed", summary.getComment()),
                 () -> assertEquals(149.99, summary.getTotalPrice()),
                 () -> assertEquals(3, summary.getFileNo()));
@@ -46,6 +57,9 @@ class WorkOrderSummaryDTOTest {
         WorkOrderSummaryDTO summary = new WorkOrderSummaryDTO();
         LocalDateTime start = LocalDateTime.of(2026, 6, 22, 8, 0);
         LocalDateTime end = LocalDateTime.of(2026, 6, 22, 10, 0);
+        LocalDateTime created = LocalDateTime.of(2026, 6, 20, 8, 0);
+        LocalDateTime modified = LocalDateTime.of(2026, 6, 21, 8, 0);
+        LocalDateTime archivedAt = LocalDateTime.of(2026, 6, 23, 8, 0);
 
         summary.setworkOrderID(5);
         summary.setCompanyName("Updated Company");
@@ -54,6 +68,10 @@ class WorkOrderSummaryDTOTest {
         summary.setStatus(WorkOrderStatus.IN_REVIEW);
         summary.setStartDateTime(start);
         summary.setEndDateTime(end);
+        summary.setCreatedAt(created);
+        summary.setLastModifiedAt(modified);
+        summary.setArchived(true);
+        summary.setArchivedAt(archivedAt);
         summary.setComment("Ready for review");
         summary.setTotalPrice(85.50);
         summary.setFileNo(2);
@@ -66,6 +84,10 @@ class WorkOrderSummaryDTOTest {
                 () -> assertEquals(WorkOrderStatus.IN_REVIEW, summary.getStatus()),
                 () -> assertEquals(start, summary.getStartDateTime()),
                 () -> assertEquals(end, summary.getEndDateTime()),
+                () -> assertEquals(created, summary.getCreatedAt()),
+                () -> assertEquals(modified, summary.getLastModifiedAt()),
+                () -> assertEquals(true, summary.isArchived()),
+                () -> assertEquals(archivedAt, summary.getArchivedAt()),
                 () -> assertEquals("Ready for review", summary.getComment()),
                 () -> assertEquals(85.50, summary.getTotalPrice()),
                 () -> assertEquals(2, summary.getFileNo()));

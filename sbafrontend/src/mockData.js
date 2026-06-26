@@ -4,40 +4,55 @@ export const mockWorkers = [
     workerFName: 'Patricia',
     workerLName: 'Admin',
     workerUser: 'patricia',
+    workerEmail: 'patricia@example.test',
     workerPW: 'Admin@123',
     admin: true,
+    archived: false,
+    archivedAt: null,
   },
   {
     workerID: 2,
     workerFName: 'Maya',
     workerLName: 'Carter',
     workerUser: 'mcarter',
+    workerEmail: 'mcarter@example.test',
     workerPW: 'Worker@123',
     admin: false,
+    archived: false,
+    archivedAt: null,
   },
   {
     workerID: 3,
     workerFName: 'Jordan',
     workerLName: 'Lee',
     workerUser: 'jlee',
+    workerEmail: 'jlee@example.test',
     workerPW: 'Worker@123',
     admin: false,
+    archived: false,
+    archivedAt: null,
   },
   {
     workerID: 4,
     workerFName: 'Sam',
     workerLName: 'Rivera',
     workerUser: 'srivera',
+    workerEmail: 'srivera@example.test',
     workerPW: 'Worker@123',
     admin: false,
+    archived: false,
+    archivedAt: null,
   },
   {
     workerID: 5,
     workerFName: 'Taylor',
     workerLName: 'Nguyen',
     workerUser: 'tnguyen',
+    workerEmail: 'tnguyen@example.test',
     workerPW: 'Worker@123',
     admin: false,
+    archived: false,
+    archivedAt: null,
   },
 ];
 
@@ -48,6 +63,8 @@ export const mockCompanies = [
     companyAddress: '1240 Market Street, Houston, TX 77002',
     companyPhone: '713-555-0140',
     companyEmail: 'dispatch@acmebuilding.example',
+    archived: false,
+    archivedAt: null,
   },
   {
     companyID: 102,
@@ -55,6 +72,8 @@ export const mockCompanies = [
     companyAddress: '7821 Commerce Drive, Austin, TX 78701',
     companyPhone: '512-555-0198',
     companyEmail: 'ops@blueoak.example',
+    archived: false,
+    archivedAt: null,
   },
   {
     companyID: 103,
@@ -62,6 +81,8 @@ export const mockCompanies = [
     companyAddress: '4517 Fairview Avenue, San Antonio, TX 78212',
     companyPhone: '210-555-0133',
     companyEmail: 'office@sunsetdental.example',
+    archived: false,
+    archivedAt: null,
   },
   {
     companyID: 104,
@@ -69,6 +90,8 @@ export const mockCompanies = [
     companyAddress: '920 Willow Bend Road, Dallas, TX 75204',
     companyPhone: '214-555-0117',
     companyEmail: 'manager@riverbend.example',
+    archived: false,
+    archivedAt: null,
   },
   {
     companyID: 105,
@@ -76,6 +99,8 @@ export const mockCompanies = [
     companyAddress: '337 Northline Road, Fort Worth, TX 76102',
     companyPhone: '817-555-0162',
     companyEmail: 'maintenance@northline.example',
+    archived: false,
+    archivedAt: null,
   },
 ];
 
@@ -88,9 +113,11 @@ export const mockWorkOrders = [
     startDateTime: '2026-06-20T08:15:00',
     endDateTime: null,
     comment: 'New inspection request for the west-side retail buildout.',
+    archived: false,
+    archivedAt: null,
     items: [
-      { workOrderItemID: 5001, itemType: 'INSPECTION', itemName: 'Initial site inspection', quantity: 1, price: 125 },
-      { workOrderItemID: 5002, itemType: 'TRAVEL', itemName: 'Travel fee', quantity: 1, price: 35 },
+      { workOrderItemID: 5001, itemType: 'LABOR', itemName: 'Initial site inspection', quantity: 1, price: 125 },
+      { workOrderItemID: 5002, itemType: 'OTHER', itemName: 'Travel fee', quantity: 1, price: 35 },
     ],
   },
   {
@@ -101,8 +128,10 @@ export const mockWorkOrders = [
     startDateTime: '2026-06-21T09:30:00',
     endDateTime: null,
     comment: 'Follow-up inspection for Acme Building Services. Same company profile as work order #1001.',
+    archived: false,
+    archivedAt: null,
     items: [
-      { workOrderItemID: 5003, itemType: 'INSPECTION', itemName: 'Follow-up inspection', quantity: 1, price: 90 },
+      { workOrderItemID: 5003, itemType: 'LABOR', itemName: 'Follow-up inspection', quantity: 1, price: 90 },
     ],
   },
   {
@@ -113,9 +142,11 @@ export const mockWorkOrders = [
     startDateTime: '2026-06-18T13:00:00',
     endDateTime: null,
     comment: 'Blue Oak Retail Group requested a review before tenant handoff.',
+    archived: false,
+    archivedAt: null,
     items: [
-      { workOrderItemID: 5004, itemType: 'INSPECTION', itemName: 'Final walkthrough', quantity: 1, price: 150 },
-      { workOrderItemID: 5005, itemType: 'DOCUMENTATION', itemName: 'Report preparation', quantity: 2, price: 45 },
+      { workOrderItemID: 5004, itemType: 'LABOR', itemName: 'Final walkthrough', quantity: 1, price: 150 },
+      { workOrderItemID: 5005, itemType: 'OTHER', itemName: 'Report preparation', quantity: 2, price: 45 },
     ],
   },
   {
@@ -126,9 +157,11 @@ export const mockWorkOrders = [
     startDateTime: '2026-06-14T10:00:00',
     endDateTime: '2026-06-14T15:45:00',
     comment: 'Completed annual inspection for Sunset Dental Partners.',
+    archived: false,
+    archivedAt: null,
     items: [
-      { workOrderItemID: 5006, itemType: 'INSPECTION', itemName: 'Annual inspection', quantity: 1, price: 175 },
-      { workOrderItemID: 5007, itemType: 'DOCUMENTATION', itemName: 'Safety checklist documentation', quantity: 1, price: 60 },
+      { workOrderItemID: 5006, itemType: 'LABOR', itemName: 'Annual inspection', quantity: 1, price: 175 },
+      { workOrderItemID: 5007, itemType: 'OTHER', itemName: 'Safety checklist documentation', quantity: 1, price: 60 },
     ],
   },
   {
@@ -139,9 +172,11 @@ export const mockWorkOrders = [
     startDateTime: '2026-06-12T08:00:00',
     endDateTime: '2026-06-12T11:20:00',
     comment: 'Completed service inspection for Riverbend Apartments.',
+    archived: false,
+    archivedAt: null,
     items: [
-      { workOrderItemID: 5008, itemType: 'INSPECTION', itemName: 'Service inspection', quantity: 1, price: 140 },
-      { workOrderItemID: 5009, itemType: 'DOCUMENTATION', itemName: 'Photo documentation', quantity: 1, price: 40 },
+      { workOrderItemID: 5008, itemType: 'LABOR', itemName: 'Service inspection', quantity: 1, price: 140 },
+      { workOrderItemID: 5009, itemType: 'OTHER', itemName: 'Photo documentation', quantity: 1, price: 40 },
     ],
   },
 ];

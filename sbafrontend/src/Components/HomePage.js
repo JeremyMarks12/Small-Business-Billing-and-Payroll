@@ -14,10 +14,10 @@ const HomePage = () => {
   const { logout, user } = useAuth();
 
   const menuItems = [
-    { label: 'My Work Orders', path: '/worker/my-workorders' },
+    { label: 'My Assignments', path: '/worker/my-assignments' },
     { label: 'View Assigned Work', path: '/worker/assigned' },
     { label: 'Billing', path: '/worker/billing' },
-    { label: 'Profile', path: '/worker/profile' },
+    { label: 'Settings', path: '/worker/settings' },
     { label: 'Logout', path: '/worker/logout' },
   ];
 

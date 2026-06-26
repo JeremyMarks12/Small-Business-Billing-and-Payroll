@@ -1,12 +1,14 @@
 package com.SBA.BillingSystem.entities;
 
 import jakarta.persistence.*;
+
+import com.SBA.BillingSystem.enums.ItemType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 
 @Entity
 @Table(name = "work_order_item")
-public class WorkOrderItem {
+public class WorkOrderItem extends BaseEntity {
 	
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) //AutoGenerates an ID
@@ -21,17 +23,26 @@ public class WorkOrderItem {
     @Column(nullable = false)
     private double price;
 	
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ItemType itemType;
+    
 	@ManyToOne(optional = false)
 	@JoinColumn(name = "work_order_id", nullable = false)
 	@JsonIgnore
 	private WorkOrder workOrder;
 
 	public WorkOrderItem() {}
-	
+
 	public WorkOrderItem(String itemName, int quantity, double price, WorkOrder workOrder) {
+		this(itemName, quantity, price, ItemType.OTHER, workOrder);
+	}
+	
+	public WorkOrderItem(String itemName, int quantity, double price, ItemType itemType, WorkOrder workOrder) {
 		this.itemName = itemName;
 		this.quantity = quantity;
 		this.price = price;
+		this.itemType = itemType;
 		this.workOrder = workOrder;
 	}
 	
@@ -47,6 +58,10 @@ public class WorkOrderItem {
 	}
 	public double getPrice() {
 		return price;
+	}
+	
+	public ItemType getItemType() {
+		return itemType;
 	}
 
 	public WorkOrder getWorkOrder() {
@@ -67,6 +82,10 @@ public class WorkOrderItem {
 
 	public void setPrice(double price) {
 		this.price = price;
+	}
+	
+	public void setItemType(ItemType itemType) {
+		this.itemType = itemType;
 	}
 	
 	public void setWorkOrder(WorkOrder workOrder) {

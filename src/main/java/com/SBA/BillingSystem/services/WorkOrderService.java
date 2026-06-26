@@ -1,7 +1,10 @@
 package com.SBA.BillingSystem.services;
 
+import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,23 +45,61 @@ public class WorkOrderService{
     }
 
     public List<WorkOrder> findByCompanyID(Integer companyID) {
-        return workOrderRepository.findByCompany_CompanyID(companyID);
+        return workOrderRepository.findByCompany_CompanyIDAndArchivedFalse(companyID);
     }
     
     public Optional<WorkOrder> findById(Integer id) {
         return workOrderRepository.findById(id);
     }
     
+    public List<WorkOrder> findActive() {
+        return workOrderRepository.findByArchivedFalse();
+    }
+
     public List<WorkOrder> findAll() {
         return workOrderRepository.findAll();
     }
 
+    public List<WorkOrder> findArchived() {
+        return workOrderRepository.findByArchivedTrue();
+    }
+
     public WorkOrder createWorkOrder(WorkOrder workOrder) {
     	workOrder.setWorkOrderID(0);
+    	workOrder.setArchived(false);
+    	workOrder.setArchivedAt(null);
     	if (workOrder.getWorkers() == null || workOrder.getWorkers().isEmpty()) {
     		workOrder.setStatus(WorkOrderStatus.OPEN);
     	} else {
+    		Set<Worker> assignedWorkers = new HashSet<>();
+    		for (Worker worker : workOrder.getWorkers()) {
+    			Worker managedWorker = workerRepository.findById(worker.getWorkerID())
+    					.orElseThrow(() -> new IllegalArgumentException("Worker not found"));
+
+    			if (managedWorker.isArchived()) {
+    				throw new IllegalStateException("Archived workers cannot be assigned");
+    			}
+
+    			assignedWorkers.add(managedWorker);
+    		}
+    		workOrder.setWorkers(assignedWorkers);
+    		for (Worker worker : assignedWorkers) {
+    			if (worker.isArchived()) {
+    				throw new IllegalStateException("Archived workers cannot be assigned");
+    			}
+    		}
     		workOrder.setStatus(WorkOrderStatus.IN_PROCESS);
+    	}
+
+    	if (workOrder.getCompany() != null) {
+    		Company company = companyRepository.findById(workOrder.getCompany().getCompanyID())
+    				.orElseThrow(() -> new IllegalArgumentException("Company not found"));
+
+    		if (company.isArchived()) {
+    			throw new IllegalStateException("Archived companies cannot be assigned");
+    		}
+
+    		workOrder.setCompany(company);
     	}
     	
         return workOrderRepository.save(workOrder);
@@ -74,6 +115,10 @@ public class WorkOrderService{
 
         Worker worker = workerRepository.findById(workerID)
                 .orElseThrow(() -> new IllegalArgumentException("Worker not found"));
+
+        if (worker.isArchived()) {
+            throw new IllegalStateException("Archived workers cannot be assigned");
+        }
 
         boolean alreadyAssigned = workOrder.getWorkers().stream()
                 .anyMatch(assignedWorker -> assignedWorker.getWorkerID() == workerID);
@@ -122,6 +167,10 @@ public class WorkOrderService{
         Company company = companyRepository.findById(companyID)
                 .orElseThrow(() -> new IllegalArgumentException("Company not found"));
 
+        if (company.isArchived()) {
+            throw new IllegalStateException("Archived companies cannot be assigned");
+        }
+
         workOrder.setCompany(company);
 
         return workOrderRepository.save(workOrder);
@@ -138,6 +187,9 @@ public class WorkOrderService{
     @Transactional
     public WorkOrder addItem(Integer workOrderID, WorkOrderItem item) {
         WorkOrder workOrder = getRequiredWorkOrder(workOrderID);
+        if (item.getItemType() == null) {
+            throw new IllegalArgumentException("Item type is required");
+        }
         item.setWorkOrderItemID(0);
         workOrder.addItem(item);
 
@@ -155,18 +207,56 @@ public class WorkOrderService{
         item.setItemName(request.getItemName());
         item.setQuantity(request.getQuantity());
         item.setPrice(request.getPrice());
+        item.setItemType(request.getItemType());
 
         return workOrderRepository.save(workOrder);
     }
 
     @Transactional
-    public void deleteById(Integer id) {
+    public void archiveById(Integer id) {
         WorkOrder workOrder = getRequiredWorkOrder(id);
+
+        if (workOrder.getStatus() != WorkOrderStatus.COMPLETE) {
+            throw new IllegalStateException("Only completed work orders can be archived");
+        }
+
+        archiveWorkOrder(workOrder);
+    }
+
+    @Transactional
+    public void forceArchiveById(Integer id) {
+        WorkOrder workOrder = getRequiredWorkOrder(id);
+        archiveWorkOrder(workOrder);
+    }
+
+    private void archiveWorkOrder(WorkOrder workOrder) {
+        workOrder.setArchived(true);
+        workOrder.setArchivedAt(LocalDateTime.now());
+        workOrderRepository.save(workOrder);
+    }
+
+    @Transactional
+    public WorkOrder restoreById(Integer id) {
+        WorkOrder workOrder = getRequiredWorkOrder(id);
+        workOrder.setArchived(false);
+        workOrder.setArchivedAt(null);
+        return workOrderRepository.save(workOrder);
+    }
+
+    @Transactional
+    public void deletePermanentlyById(Integer id) {
+        WorkOrder workOrder = getRequiredWorkOrder(id);
+
+        if (!workOrder.isArchived()) {
+            throw new IllegalStateException("Only archived work orders can be permanently deleted");
+        }
+
+        workOrder.setWorkers(new HashSet<>());
         workOrderRepository.delete(workOrder);
     }
     
     public long count() {
-        return workOrderRepository.count();
+        return workOrderRepository.countByArchivedFalse();
     }
     
     // Work order add/delete/submit stuff

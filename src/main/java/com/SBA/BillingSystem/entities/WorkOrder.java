@@ -14,11 +14,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
 @Table(name = "work_order")
-public class WorkOrder {
+public class WorkOrder extends ArchivableEntity {
 	
 	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int WorkOrderID;
+    private int workOrderID;
     
 	@ManyToMany
 	@JoinTable(
@@ -50,7 +50,7 @@ public class WorkOrder {
 	public WorkOrder() {}
 	
 	public WorkOrder(
-			int WorkOrderID, 
+			int workOrderID, 
 			Set<Worker> workers,
 			Company company, 
 			WorkOrderStatus status, 
@@ -58,7 +58,7 @@ public class WorkOrder {
 			LocalDateTime endDateTime,
 			String comment) 
 	{
-		this.WorkOrderID = WorkOrderID;
+		this.workOrderID = workOrderID;
 		setWorkers(workers);
 		this.company = company;
 		this.status = status;
@@ -69,7 +69,7 @@ public class WorkOrder {
 	}
 	
 	public int getWorkOrderID() {
-		return WorkOrderID;
+		return workOrderID;
 	}
 	
 	public Set<Worker> getWorkers() {
@@ -101,8 +101,8 @@ public class WorkOrder {
 	}
 
 
-	public void setWorkOrderID(int WorkOrderID) {
-		this.WorkOrderID = WorkOrderID;
+	public void setWorkOrderID(int workOrderID) {
+		this.workOrderID = workOrderID;
 	}
 	
 	public void setWorkers(Set<Worker> workers) {

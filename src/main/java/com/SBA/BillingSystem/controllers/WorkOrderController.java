@@ -29,7 +29,17 @@ public class WorkOrderController {
 
     @GetMapping
     public List<WorkOrder> getAllWorkOrders() {
+        return workOrderService.findActive();
+    }
+
+    @GetMapping("/all-with-archived")
+    public List<WorkOrder> getAllWorkOrdersIncludingArchived() {
         return workOrderService.findAll();
+    }
+
+    @GetMapping("/archived")
+    public List<WorkOrder> getArchivedWorkOrders() {
+        return workOrderService.findArchived();
     }
 
     @GetMapping("/{id}")
@@ -96,8 +106,29 @@ public class WorkOrderController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
-    public void deleteWorkOrder(@PathVariable Integer id) {
-    	workOrderService.deleteById(id);
+    public ResponseEntity<Void> archiveWorkOrder(@PathVariable Integer id) {
+    	workOrderService.archiveById(id);
+    	return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/{id}/force-archive")
+    public ResponseEntity<Void> forceArchiveWorkOrder(@PathVariable Integer id) {
+    	workOrderService.forceArchiveById(id);
+    	return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/{id}/restore")
+    public WorkOrder restoreWorkOrder(@PathVariable Integer id) {
+    	return workOrderService.restoreById(id);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/{id}/permanent")
+    public ResponseEntity<Void> deleteWorkOrderPermanently(@PathVariable Integer id) {
+    	workOrderService.deletePermanentlyById(id);
+    	return ResponseEntity.noContent().build();
     }
     
     @GetMapping("/count")

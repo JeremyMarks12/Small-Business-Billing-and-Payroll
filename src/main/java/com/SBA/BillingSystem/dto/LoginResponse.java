@@ -5,13 +5,15 @@ public class LoginResponse {
     private String workerUser;
     private String workerFName;
     private String workerLName;
+    private String workerEmail;
     private boolean admin;
 
-    public LoginResponse(Integer workerID, String workerUser, String workerFName, String workerLName, boolean admin) {
+    public LoginResponse(Integer workerID, String workerUser, String workerFName, String workerLName, String workerEmail, boolean admin) {
         this.workerID = workerID;
         this.workerUser = workerUser;
         this.workerFName = workerFName;
         this.workerLName = workerLName;
+        this.workerEmail = workerEmail;
         this.admin = admin;
     }
 
@@ -19,5 +21,6 @@ public class LoginResponse {
     public String getWorkerUser() { return workerUser; }
     public String getWorkerFName() { return workerFName; }
     public String getWorkerLName() { return workerLName; }
+    public String getWorkerEmail() { return workerEmail; }
     public boolean isAdmin() { return admin; }
 }

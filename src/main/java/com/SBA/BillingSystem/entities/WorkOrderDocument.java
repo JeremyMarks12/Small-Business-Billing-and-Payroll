@@ -1,23 +1,22 @@
 package com.SBA.BillingSystem.entities;
 
-import java.time.LocalDateTime;
-
 import com.SBA.BillingSystem.enums.DocumentType;
 
 import jakarta.persistence.*;
 
 @Entity
 @Table(name = "work_order_document")
-public class WorkOrderDocument {
+public class WorkOrderDocument extends BaseEntity {
 	
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int documentID;
 
     @ManyToOne
-    @JoinColumn(name = "work_order")
+    @JoinColumn(name = "work_order_id", nullable = false)
     private WorkOrder workOrder;
 
+    @Column(nullable = false)
     private String fileName;
 
     @Enumerated(EnumType.STRING)
@@ -25,13 +24,11 @@ public class WorkOrderDocument {
     private DocumentType documentType;
 
     @Lob
+    @Column(nullable = false)
     private byte[] documentData;
 
-    @Column(nullable = false)
-    private LocalDateTime uploadDateTime = LocalDateTime.now();
-
     @ManyToOne
-    @JoinColumn(name = "uploaded_by_worker")
+    @JoinColumn(name = "uploaded_by_worker_id", nullable = false)
     private Worker uploadedByWorker;
     
     @Column(nullable = false)
@@ -45,8 +42,7 @@ public class WorkOrderDocument {
     		WorkOrder workOrder, 
     		String fileName, 
     		DocumentType documentType, 
-    		byte[] documentData, 
-    		LocalDateTime uploadDateTime, 
+    		byte[] documentData,  
     		Worker uploadedByWorker,
     		String mimeType,
     		long fileSize) 
@@ -55,7 +51,6 @@ public class WorkOrderDocument {
     	this.fileName=fileName;
     	this.documentType = documentType;
     	this.documentData = documentData;
-    	this.uploadDateTime=uploadDateTime;
     	this.uploadedByWorker=uploadedByWorker;
     	this.mimeType = mimeType;
     	this.fileSize=fileSize;
@@ -80,10 +75,6 @@ public class WorkOrderDocument {
 	
 	public byte[] getDocumentData() {
 	    return documentData;
-	}
-	
-	public LocalDateTime getUploadDateTime() {
-		return uploadDateTime;
 	}
 	
 	public Worker getUploadedByWorker() {
@@ -117,11 +108,7 @@ public class WorkOrderDocument {
 	    this.documentData = documentData;
 	}
 
-	public void setUploadDateTime(LocalDateTime uploadDateTime) {
-		this.uploadDateTime = uploadDateTime;
-	}
-
-	public void setUploadedByWorkerID(Worker uploadedByWorker) {
+	public void setUploadedByWorker(Worker uploadedByWorker) {
 		this.uploadedByWorker = uploadedByWorker;
 	}
 	

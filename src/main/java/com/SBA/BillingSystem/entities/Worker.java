@@ -10,7 +10,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
 @Table(name = "worker") // Maps the worker class to the worker table in the DB
-public class Worker {
+public class Worker extends ArchivableEntity {
 	
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) //AutoGenerates an ID
@@ -24,6 +24,9 @@ public class Worker {
 
     @Column(name = "worker_username", unique = true)
     private String workerUser;
+    
+    @Column(name = "worker_email", nullable = false, unique = true)
+    private String workerEmail;
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(name = "worker_password")
@@ -37,11 +40,12 @@ public class Worker {
 
     public Worker() {}
 
-    public Worker(String workerFName, String workerLName, String workerUser, String workerPW, boolean isAdmin) 
+    public Worker(String workerFName, String workerLName, String workerUser, String workerEmail, String workerPW, boolean isAdmin) 
     {
         this.workerFName = workerFName;
         this.workerLName = workerLName;
         this.workerUser = workerUser;
+        this.workerEmail = workerEmail;
         this.workerPW = workerPW;
         this.isAdmin = isAdmin;
     }
@@ -65,6 +69,10 @@ public class Worker {
     
 	public String getWorkerUser() {
 		return workerUser;
+	}
+	
+	public String getWorkerEmail() {
+		return workerEmail;
 	}
 
 	public Set<WorkOrder> getWorkOrders() {
@@ -94,6 +102,10 @@ public class Worker {
     public void setWorkerUser(String workerUser) {
     	this.workerUser = workerUser;
     }
+    
+    public void setWorkerEmail(String workerEmail) {
+    	this.workerEmail = workerEmail;
+    }
 
 	public void setWorkOrders(Set<WorkOrder> workOrders) {
 		for (WorkOrder workOrder : new HashSet<>(this.workOrders)) {
@@ -107,14 +119,11 @@ public class Worker {
 		}
 	}
 
-
     public boolean isAdmin() {
         return Boolean.TRUE.equals(isAdmin);
     }
     
-
     public void setAdmin(boolean isAdmin) {
         this.isAdmin = isAdmin;
     }
-
 }

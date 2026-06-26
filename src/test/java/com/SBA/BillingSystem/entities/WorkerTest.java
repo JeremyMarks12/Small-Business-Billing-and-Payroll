@@ -13,12 +13,13 @@ class WorkerTest {
 
     @Test
     void constructorSetsWorkerDetails() {
-        Worker worker = new Worker("Pat", "Lee", "plee", "secret", true);
+        Worker worker = new Worker("Pat", "Lee", "plee", "plee@test.com", "secret", true);
 
         assertAll(
                 () -> assertEquals("Pat", worker.getWorkerFName()),
                 () -> assertEquals("Lee", worker.getWorkerLName()),
                 () -> assertEquals("plee", worker.getWorkerUser()),
+                () -> assertEquals("plee@test.com", worker.getWorkerEmail()),
                 () -> assertEquals("secret", worker.getWorkerPW()),
                 () -> assertTrue(worker.isAdmin()),
                 () -> assertTrue(worker.getWorkOrders().isEmpty()));
@@ -32,6 +33,7 @@ class WorkerTest {
         worker.setWorkerFName("Sam");
         worker.setWorkerLName("Taylor");
         worker.setWorkerUser("staylor");
+        worker.setWorkerEmail("staylor@test.com");
         worker.setWorkerPW("new-secret");
         worker.setAdmin(false);
 
@@ -40,6 +42,7 @@ class WorkerTest {
                 () -> assertEquals("Sam", worker.getWorkerFName()),
                 () -> assertEquals("Taylor", worker.getWorkerLName()),
                 () -> assertEquals("staylor", worker.getWorkerUser()),
+                () -> assertEquals("staylor@test.com", worker.getWorkerEmail()),
                 () -> assertEquals("new-secret", worker.getWorkerPW()),
                 () -> assertFalse(worker.isAdmin()));
     }

@@ -190,7 +190,7 @@ class EntityZombiesTest {
 
         @Test
         void workerStoresBasicAccountInformation() {
-            Worker worker = new Worker("Pat", "Lee", "plee", "secret", true);
+            Worker worker = new Worker("Pat", "Lee", "plee", "plee@test.com", "secret", true);
 
             assertEquals("Pat", worker.getWorkerFName());
             assertEquals("Lee", worker.getWorkerLName());

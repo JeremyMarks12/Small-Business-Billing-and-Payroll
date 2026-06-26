@@ -44,8 +44,8 @@ class WorkerControllerTest {
 
     @Test
     void getAllWorkersReturnsWorkers() throws Exception {
-        when(workerService.findAll()).thenReturn(
-                List.of(new Worker("Pat", "Lee", "plee", "hidden", true)));
+        when(workerService.findActive()).thenReturn(
+                List.of(new Worker("Pat", "Lee", "plee", "plee@test.com", "hidden", true)));
 
         mockMvc.perform(get("/workers"))
                 .andExpect(status().isOk())
@@ -56,7 +56,7 @@ class WorkerControllerTest {
 
     @Test
     void getWorkerByIdReturnsWorkerOrNotFound() throws Exception {
-        Worker worker = new Worker("Pat", "Lee", "plee", "hidden", false);
+        Worker worker = new Worker("Pat", "Lee", "plee", "plee@test.com", "hidden", false);
         worker.setWorkerID(1);
         when(workerService.findById(1)).thenReturn(Optional.of(worker));
         when(workerService.findById(99)).thenReturn(Optional.empty());
@@ -70,7 +70,7 @@ class WorkerControllerTest {
 
     @Test
     void getWorkerByUsernameReturnsWorkerOrNotFound() throws Exception {
-        Worker worker = new Worker("Pat", "Lee", "plee", "hidden", false);
+        Worker worker = new Worker("Pat", "Lee", "plee", "plee@test.com", "hidden", false);
         when(workerService.findByUsername("plee")).thenReturn(Optional.of(worker));
         when(workerService.findByUsername("missing")).thenReturn(Optional.empty());
 
@@ -83,7 +83,7 @@ class WorkerControllerTest {
 
     @Test
     void addWorkerCreatesWorker() throws Exception {
-        Worker saved = new Worker("Pat", "Lee", "plee", "encoded", false);
+        Worker saved = new Worker("Pat", "Lee", "plee", "plee@test.com", "encoded", false);
         saved.setWorkerID(2);
         when(workerService.createWorker(any(Worker.class))).thenReturn(saved);
 
@@ -94,6 +94,7 @@ class WorkerControllerTest {
                                   "workerFName": "Pat",
                                   "workerLName": "Lee",
                                   "workerUser": "plee",
+                                  "workerEmail": "plee@test.com",
                                   "workerPW": "password123",
                                   "admin": false
                                 }
@@ -105,13 +106,13 @@ class WorkerControllerTest {
     @Test
     void deleteAndResetPasswordDelegateToService() throws Exception {
         mockMvc.perform(delete("/workers/3"))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
         mockMvc.perform(put("/workers/3/password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"newPassword\":\"new-password\"}"))
                 .andExpect(status().isNoContent());
 
-        verify(workerService).deleteById(3);
+        verify(workerService).archiveById(3);
         verify(workerService).resetPassword(3, "new-password");
     }
 

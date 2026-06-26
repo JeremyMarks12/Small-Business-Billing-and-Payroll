@@ -18,18 +18,16 @@ class WorkOrderDocumentTest {
         WorkOrder workOrder = new WorkOrder();
         Worker worker = new Worker();
         byte[] data = { 1, 2, 3 };
-        LocalDateTime uploadedAt = LocalDateTime.of(2026, 6, 22, 10, 30);
 
         WorkOrderDocument document = new WorkOrderDocument(
                 workOrder, "receipt.pdf", DocumentType.RECEIPT, data,
-                uploadedAt, worker, "application/pdf", data.length);
+                worker, "application/pdf", data.length);
 
         assertAll(
                 () -> assertSame(workOrder, document.getWorkOrder()),
                 () -> assertEquals("receipt.pdf", document.getFileName()),
                 () -> assertEquals(DocumentType.RECEIPT, document.getDocumentType()),
                 () -> assertArrayEquals(data, document.getDocumentData()),
-                () -> assertEquals(uploadedAt, document.getUploadDateTime()),
                 () -> assertSame(worker, document.getUploadedByWorker()),
                 () -> assertEquals("application/pdf", document.getMimeType()),
                 () -> assertEquals(data.length, document.getFileSize()));
@@ -48,8 +46,8 @@ class WorkOrderDocumentTest {
         document.setFileName("work-order.txt");
         document.setDocumentType(DocumentType.WORK_ORDER);
         document.setDocumentData(data);
-        document.setUploadDateTime(uploadedAt);
-        document.setUploadedByWorkerID(worker);
+        document.setCreatedAt(uploadedAt);
+        document.setUploadedByWorker(worker);
         document.setMimeType("text/plain");
         document.setFileSize(data.length);
 
@@ -59,7 +57,7 @@ class WorkOrderDocumentTest {
                 () -> assertEquals("work-order.txt", document.getFileName()),
                 () -> assertEquals(DocumentType.WORK_ORDER, document.getDocumentType()),
                 () -> assertArrayEquals(data, document.getDocumentData()),
-                () -> assertEquals(uploadedAt, document.getUploadDateTime()),
+                () -> assertEquals(uploadedAt, document.getCreatedAt()),
                 () -> assertSame(worker, document.getUploadedByWorker()),
                 () -> assertEquals("text/plain", document.getMimeType()),
                 () -> assertEquals(data.length, document.getFileSize()));

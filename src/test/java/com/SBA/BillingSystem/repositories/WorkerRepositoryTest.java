@@ -16,12 +16,16 @@ class WorkerRepositoryTest {
 
     @Test
     void findByWorkerUserIgnoreCaseFindsUsernameRegardlessOfCase() {
-        Worker worker = new Worker("Pat", "Lee", "PatLee", "encoded-password", false);
+        Worker worker = new Worker("Pat", "Lee", "PatLee", "PatLee@test.com", "encoded-password", false);
         workerRepository.saveAndFlush(worker);
 
         assertThat(workerRepository.findByWorkerUserIgnoreCase("patlee"))
                 .containsSame(worker);
         assertThat(workerRepository.findByWorkerUserIgnoreCase("PATLEE"))
+                .containsSame(worker);
+        assertThat(workerRepository.findByWorkerUserIgnoreCaseAndArchivedFalse("patlee"))
+                .containsSame(worker);
+        assertThat(workerRepository.findByWorkerEmailIgnoreCase("patlee@test.com"))
                 .containsSame(worker);
     }
 
@@ -33,7 +37,7 @@ class WorkerRepositoryTest {
     @Test
     void saveAndDeleteWorker() {
         Worker saved = workerRepository.saveAndFlush(
-                new Worker("Sam", "Taylor", "staylor", "encoded-password", true));
+                new Worker("Sam", "Taylor", "staylor", "staylor@test.com", "encoded-password", true));
 
         assertThat(saved.getWorkerID()).isPositive();
 
@@ -41,5 +45,16 @@ class WorkerRepositoryTest {
         workerRepository.flush();
 
         assertThat(workerRepository.findById(saved.getWorkerID())).isEmpty();
+    }
+
+    @Test
+    void archiveQueriesSeparateActiveAndArchivedWorkers() {
+        Worker active = new Worker("Active", "Worker", "active", "active@test.com", "encoded-password", false);
+        Worker archived = new Worker("Archived", "Worker", "archived", "archived@test.com", "encoded-password", false);
+        archived.setArchived(true);
+        workerRepository.saveAllAndFlush(java.util.List.of(active, archived));
+
+        assertThat(workerRepository.findByArchivedFalse()).contains(active).doesNotContain(archived);
+        assertThat(workerRepository.findByArchivedTrue()).contains(archived).doesNotContain(active);
     }
 }

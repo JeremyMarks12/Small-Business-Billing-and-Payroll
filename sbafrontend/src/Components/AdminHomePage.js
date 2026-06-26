@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import {
     Box, Drawer, List, ListItem, ListItemButton, ListItemText,
-    Dialog, DialogTitle, DialogContent, DialogActions, Typography, Button
+    Dialog, DialogTitle, DialogContent, DialogActions, Typography, Button,
+    Collapse
 } from '@mui/material';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from './AuthContext';
@@ -10,21 +11,56 @@ import { apiFetch } from '../api';
 const AdminHomePage = () => {
     const [open, setOpen] = useState(false);
     const [, setActiveTab] = useState('/admin');
+    const [openMenus, setOpenMenus] = useState({
+        workOrders: false,
+        companies: false,
+        worker: false,
+        archive: false,
+    });
     const navigate = useNavigate();
     const location = useLocation();
     const { logout, user } = useAuth();
 	// Added to usestate area
 	const[workOrderCount, setWorkOrderCount] = useState(0);
 	
-    const menuItems = [
-        { label: 'My Work Orders', path: '/admin/my-workorders' },
-		{ label: 'View Work Orders', path: '/admin/workorders'},
-        { label: 'Work Order Functions', path: '/admin/assign' },
-        { label: 'Company Profiles', path: '/admin/companies' },
-        { label: 'Worker Profiles', path: '/admin/inspectors' },
-        { label: 'Settings (Profile)', path: '/admin/profile' },
+    const menuItems = useMemo(() => [
+        { label: 'My Assignments', path: '/admin/my-assignments' },
+        {
+            label: 'Work Orders',
+            key: 'workOrders',
+            children: [
+                { label: 'Active Work Orders', path: '/admin/workorders' },
+                { label: 'Manage Work Orders', path: '/admin/manage-workorders' },
+            ],
+        },
+        {
+            label: 'Companies',
+            key: 'companies',
+            children: [
+                { label: 'Active Companies', path: '/admin/companies' },
+                { label: 'Manage Companies', path: '/admin/manage-companies' },
+            ],
+        },
+        {
+            label: 'Worker',
+            key: 'worker',
+            children: [
+                { label: 'Active Workers', path: '/admin/workers' },
+                { label: 'Manage Workers', path: '/admin/manage-workers' },
+            ],
+        },
+        {
+            label: 'Archive',
+            key: 'archive',
+            children: [
+                { label: 'Work Orders', path: '/admin/archive/workorders' },
+                { label: 'Companies', path: '/admin/archive/companies' },
+                { label: 'Workers', path: '/admin/archive/workers' },
+            ],
+        },
+        { label: 'Settings', path: '/admin/settings' },
         { label: 'Logout', path: '/admin/logout' }
-    ];
+    ], []);
 
     const handleLogoutClick = () => {
         setOpen(true);
@@ -41,19 +77,47 @@ const AdminHomePage = () => {
         setActiveTab(location.pathname);
     };
 
+    const closedMenus = useCallback(() => ({
+        workOrders: false,
+        companies: false,
+        worker: false,
+        archive: false,
+    }), []);
+
+    const getParentMenuKey = useCallback((path) => (
+        menuItems.find(item => item.children?.some(child => path === child.path || path.startsWith(`${child.path}/`)))?.key
+    ), [menuItems]);
+
+    const openOnlyMenu = useCallback((key) => {
+        setOpenMenus({ ...closedMenus(), ...(key ? { [key]: true } : {}) });
+    }, [closedMenus]);
+
     const handleItemClick = (path, label) => {
         if (label === 'Logout') {
+            setOpenMenus(closedMenus());
             handleLogoutClick();
         } else {
             navigate(path);
             setActiveTab(path);
+            openOnlyMenu(getParentMenuKey(path));
         }
     };
+
+    const toggleMenu = (key) => {
+        setOpenMenus(current => current[key] ? closedMenus() : { ...closedMenus(), [key]: true });
+    };
+
+    const isActivePath = (path) => location.pathname === path || location.pathname.startsWith(`${path}/`);
 
     const handleTitleClick = () => {
         navigate('/admin');
         setActiveTab('/admin');
+        setOpenMenus(closedMenus());
     };
+
+    useEffect(() => {
+        openOnlyMenu(getParentMenuKey(location.pathname));
+    }, [getParentMenuKey, location.pathname, openOnlyMenu]);
 	
 	// Block Test
 	useEffect(() => {
@@ -100,43 +164,83 @@ const AdminHomePage = () => {
                 )}
                 
                 <List>
-                    {menuItems.map((item, index) => (
-                        <ListItem key={index} disablePadding>
-                            <ListItemButton
-                                onClick={() => handleItemClick(item.path, item.label)}
-                                sx={{
-                                    backgroundColor: location.pathname === item.path ? '#153147' : 'inherit',
-									color: location.pathname === item.path ? '#ffffff' : '1f2937',
-									borderRadius: '12px',
-									mx: 1,
-									
-										'&:hover': {
-										backgroundColor:
-											location.pathname === item.path
-												? '#1f3b63'
-												: '#e5e7eb',
-									},
+                    {menuItems.map((item, index) => {
+                        const childActive = item.children?.some(child => isActivePath(child.path));
 
-									'& .MuiListItemText-primary': {
-									    fontWeight: location.pathname === item.path ? 600 : 400,
-									    color:
-									        location.pathname === item.path
-									            ? '#ffffff'
-									            : '#1f2937',
-									},
+                        if (item.children) {
+                            return (
+                                <Box key={item.key}>
+                                    <ListItem disablePadding>
+                                        <ListItemButton
+                                            onClick={() => toggleMenu(item.key)}
+                                            sx={{
+                                                backgroundColor: childActive ? '#dbeafe' : 'inherit',
+                                                borderRadius: '12px',
+                                                mx: 1,
+                                                '&:hover': { backgroundColor: '#e5e7eb' },
+                                                '& .MuiListItemText-primary': {
+                                                    fontWeight: childActive ? 700 : 500,
+                                                    color: '#1f2937',
+                                                },
+                                            }}
+                                        >
+                                            <ListItemText primary={`${item.label} ${openMenus[item.key] ? 'v' : '>'}`} />
+                                        </ListItemButton>
+                                    </ListItem>
+                                    <Collapse in={openMenus[item.key]} timeout="auto" unmountOnExit>
+                                        <List component="div" disablePadding>
+                                            {item.children.map(child => (
+                                                <ListItem key={child.path} disablePadding>
+                                                    <ListItemButton
+                                                        onClick={() => handleItemClick(child.path, child.label)}
+                                                        sx={{
+                                                            backgroundColor: isActivePath(child.path) ? '#153147' : 'inherit',
+                                                            color: isActivePath(child.path) ? '#ffffff' : '#1f2937',
+                                                            borderRadius: '12px',
+                                                            mx: 2,
+                                                            pl: 4,
+                                                            '&:hover': {
+                                                                backgroundColor: isActivePath(child.path) ? '#1f3b63' : '#e5e7eb',
+                                                            },
+                                                            '& .MuiListItemText-primary': {
+                                                                fontWeight: isActivePath(child.path) ? 600 : 400,
+                                                                color: isActivePath(child.path) ? '#ffffff' : '#1f2937',
+                                                            },
+                                                        }}
+                                                    >
+                                                        <ListItemText primary={child.label} />
+                                                    </ListItemButton>
+                                                </ListItem>
+                                            ))}
+                                        </List>
+                                    </Collapse>
+                                </Box>
+                            );
+                        }
 
-									'& .MuiSvgIcon-root': {
-									    color:
-									        location.pathname === item.path
-									            ? '#ffffff'
-									            : '#6b7280',
-									},
-									}}
-                            >
-                                <ListItemText primary={item.label} />
-                            </ListItemButton>
-                        </ListItem>
-                    ))}
+                        return (
+                            <ListItem key={index} disablePadding>
+                                <ListItemButton
+                                    onClick={() => handleItemClick(item.path, item.label)}
+                                    sx={{
+                                        backgroundColor: isActivePath(item.path) ? '#153147' : 'inherit',
+                                        color: isActivePath(item.path) ? '#ffffff' : '#1f2937',
+                                        borderRadius: '12px',
+                                        mx: 1,
+                                        '&:hover': {
+                                            backgroundColor: isActivePath(item.path) ? '#1f3b63' : '#e5e7eb',
+                                        },
+                                        '& .MuiListItemText-primary': {
+                                            fontWeight: isActivePath(item.path) ? 600 : 400,
+                                            color: isActivePath(item.path) ? '#ffffff' : '#1f2937',
+                                        },
+                                    }}
+                                >
+                                    <ListItemText primary={item.label} />
+                                </ListItemButton>
+                            </ListItem>
+                        );
+                    })}
                 </List>
             </Drawer>
 

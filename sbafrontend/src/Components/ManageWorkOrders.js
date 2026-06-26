@@ -5,10 +5,6 @@ import {
   Button,
   Chip,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   FormControl,
   Grid,
   InputLabel,
@@ -29,7 +25,7 @@ import { apiFetch } from '../api';
 import { formatDateTime, getWorkOrderWorkers, normalizeWorker } from '../model';
 import { useNavigate } from 'react-router-dom';
 
-const AssignWork = () => {
+const ManageWorkOrders = () => {
   const navigate = useNavigate();
   const [workers, setWorkers] = useState([]);
   const [companies, setCompanies] = useState([]);
@@ -40,7 +36,6 @@ const AssignWork = () => {
   const [modifyWorkOrderID, setModifyWorkOrderID] = useState('');
   const [removeWorkerID, setRemoveWorkerID] = useState('');
   const [removeCompanyID, setRemoveCompanyID] = useState('');
-  const [profileDialog, setProfileDialog] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
@@ -59,8 +54,9 @@ const AssignWork = () => {
 
   useEffect(loadData, []);
 
-  const modifiableWorkOrders = workOrders.filter(order => !['COMPLETE', 'IN_REVIEW'].includes(order.status));
-  const reviewWorkOrders = workOrders.filter(order => order.status === 'IN_REVIEW');
+  const activeWorkOrders = workOrders.filter(order => !order.archived);
+  const modifiableWorkOrders = activeWorkOrders.filter(order => !['COMPLETE', 'IN_REVIEW'].includes(order.status));
+  const reviewWorkOrders = activeWorkOrders.filter(order => order.status === 'IN_REVIEW');
   const selectedModifyWorkOrder = useMemo(
     () => workOrders.find(order => order.workOrderID === Number(modifyWorkOrderID)),
     [modifyWorkOrderID, workOrders]
@@ -127,18 +123,21 @@ const AssignWork = () => {
     }
   };
 
-  const deleteWorkOrder = async () => {
-    if (!selectedModifyWorkOrder) return;
-    if (!window.confirm(`Delete work order #${selectedModifyWorkOrder.workOrderID}? This cannot be undone.`)) return;
+  const archiveWorkOrder = async (workOrder) => {
+    if (!workOrder) return;
+    if (workOrder.status !== 'COMPLETE') return;
+    if (!window.confirm(`Archive completed work order #${workOrder.workOrderID}?`)) return;
 
     setSaving(true);
     setMessage(null);
     try {
-      await apiFetch(`/workorders/${selectedModifyWorkOrder.workOrderID}`, { method: 'DELETE' });
-      setMessage({ severity: 'success', text: `Work order #${selectedModifyWorkOrder.workOrderID} deleted.` });
-      setModifyWorkOrderID('');
-      setRemoveWorkerID('');
-      setRemoveCompanyID('');
+      await apiFetch(`/workorders/${workOrder.workOrderID}`, { method: 'DELETE' });
+      setMessage({ severity: 'success', text: `Work order #${workOrder.workOrderID} archived.` });
+      if (Number(modifyWorkOrderID) === workOrder.workOrderID) {
+        setModifyWorkOrderID('');
+        setRemoveWorkerID('');
+        setRemoveCompanyID('');
+      }
       loadData();
     } catch (error) {
       setMessage({ severity: 'error', text: error.message });
@@ -147,21 +146,18 @@ const AssignWork = () => {
     }
   };
 
-  const deleteAnyWorkOrder = async (workOrder) => {
-    if (!workOrder) return;
-    if (!window.confirm(`Delete work order #${workOrder.workOrderID}? This cannot be undone.`)) return;
+  const forceArchiveWorkOrder = async () => {
+    if (!selectedModifyWorkOrder) return;
+    if (!window.confirm(`Force archive work order #${selectedModifyWorkOrder.workOrderID}?`)) return;
 
     setSaving(true);
     setMessage(null);
     try {
-      await apiFetch(`/workorders/${workOrder.workOrderID}`, { method: 'DELETE' });
-      setMessage({ severity: 'success', text: `Work order #${workOrder.workOrderID} deleted.` });
-      if (Number(modifyWorkOrderID) === workOrder.workOrderID) {
-        setModifyWorkOrderID('');
-        setRemoveWorkerID('');
-        setRemoveCompanyID('');
-      }
-      setProfileDialog(null);
+      await apiFetch(`/workorders/${selectedModifyWorkOrder.workOrderID}/force-archive`, { method: 'PUT' });
+      setMessage({ severity: 'success', text: `Work order #${selectedModifyWorkOrder.workOrderID} force archived.` });
+      setModifyWorkOrderID('');
+      setRemoveWorkerID('');
+      setRemoveCompanyID('');
       loadData();
     } catch (error) {
       setMessage({ severity: 'error', text: error.message });
@@ -263,7 +259,7 @@ const AssignWork = () => {
 
   return (
     <Box sx={{ p: 3, pb: 8 }}>
-      <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3 }}>Work Order Functions</Typography>
+      <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3 }}>Manage Work Orders</Typography>
       {message && <Alert severity={message.severity} sx={{ mb: 2 }}>{message.text}</Alert>}
 
       <Grid container spacing={3} alignItems="stretch">
@@ -311,7 +307,7 @@ const AssignWork = () => {
 
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <Typography variant="h5" align="center" sx={{ fontWeight: 600, mb: 2 }}>Modify Work Order</Typography>
+            <Typography variant="h5" align="center" sx={{ fontWeight: 600, mb: 2 }}>Edit Work Order</Typography>
 
             <FormControl fullWidth margin="normal">
               <InputLabel>Work Order</InputLabel>
@@ -322,7 +318,6 @@ const AssignWork = () => {
                   setModifyWorkOrderID(event.target.value);
                   setRemoveWorkerID('');
                   setRemoveCompanyID('');
-                  setProfileDialog(null);
                 }}
               >
                 <MenuItem value="">No Work Order</MenuItem>
@@ -383,12 +378,19 @@ const AssignWork = () => {
                 Update
               </Button>
               <Button
-                variant="contained"
+                variant="outlined"
+                disabled={!selectedModifyWorkOrder}
+                onClick={() => navigate(`/admin/workorders/${selectedModifyWorkOrder.workOrderID}`)}
+              >
+                View Details
+              </Button>
+              <Button
+                variant="outlined"
                 color="error"
                 disabled={saving || !selectedModifyWorkOrder}
-                onClick={deleteWorkOrder}
+                onClick={forceArchiveWorkOrder}
               >
-                DELETE Work Order
+                Force Archive
               </Button>
             </Stack>
 
@@ -400,7 +402,7 @@ const AssignWork = () => {
                     <Chip
                       key={worker.workerID}
                       label={`${worker.firstName} ${worker.lastName}${worker.isAdmin ? ' (Admin)' : ''}`}
-                      onClick={() => setProfileDialog({ type: 'worker', data: worker })}
+                      onClick={() => navigate(`/admin/manage-workers/${worker.workerID}`)}
                       clickable
                     />
                   )) : <Chip label="No assigned workers" />}
@@ -411,7 +413,7 @@ const AssignWork = () => {
                   {selectedModifyWorkOrder.company ? (
                     <Chip
                       label={selectedModifyWorkOrder.company.companyName}
-                      onClick={() => setProfileDialog({ type: 'company', data: selectedModifyWorkOrder.company })}
+                      onClick={() => navigate(`/admin/manage-companies/${selectedModifyWorkOrder.company.companyID}`)}
                       clickable
                     />
                   ) : <Chip label="No company assigned" />}
@@ -497,36 +499,42 @@ const AssignWork = () => {
                   <TableRow>
                     <TableCell>Work Order</TableCell>
                     <TableCell>Status</TableCell>
+                    <TableCell>Created</TableCell>
+                    <TableCell>Last Updated</TableCell>
                     <TableCell align="right">Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {workOrders.map(order => (
+                  {activeWorkOrders.map(order => (
                     <TableRow key={order.workOrderID}>
                       <TableCell>
                         <Button
                           size="small"
-                          onClick={() => setProfileDialog({ type: 'workOrder', data: order })}
+                          onClick={() => navigate(`/admin/workorders/${order.workOrderID}`)}
                         >
                           {order.workOrderID}
                         </Button>
                       </TableCell>
                       <TableCell>{order.status.replaceAll('_', ' ')}</TableCell>
+                      <TableCell>{formatDateTime(order.createdAt)}</TableCell>
+                      <TableCell>{formatDateTime(order.lastModifiedAt)}</TableCell>
                       <TableCell align="right">
-                        <Button
-                          size="small"
-                          color="error"
-                          disabled={saving}
-                          onClick={() => deleteAnyWorkOrder(order)}
-                        >
-                          Delete
-                        </Button>
+                        {order.status === 'COMPLETE' && (
+                          <Button
+                            size="small"
+                            color="warning"
+                            disabled={saving}
+                            onClick={() => archiveWorkOrder(order)}
+                          >
+                            Archive
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
-                  {!workOrders.length && (
+                  {!activeWorkOrders.length && (
                     <TableRow>
-                      <TableCell colSpan={3}>No work orders found.</TableCell>
+                      <TableCell colSpan={5}>No work orders found.</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
@@ -536,51 +544,8 @@ const AssignWork = () => {
         </Grid>
       </Grid>
 
-      <Dialog open={Boolean(profileDialog)} onClose={() => setProfileDialog(null)} fullWidth maxWidth="sm">
-        <DialogTitle>
-          {profileDialog?.type === 'worker'
-            ? 'Worker Profile'
-            : profileDialog?.type === 'company'
-              ? 'Company Profile'
-              : 'Work Order'}
-        </DialogTitle>
-        <DialogContent>
-          {profileDialog?.type === 'worker' && (
-            <Box>
-              <Typography><strong>Name:</strong> {profileDialog.data.firstName} {profileDialog.data.lastName}</Typography>
-              <Typography><strong>Username:</strong> {profileDialog.data.username}</Typography>
-              <Typography><strong>Role:</strong> {profileDialog.data.isAdmin ? 'Admin' : 'Worker'}</Typography>
-            </Box>
-          )}
-          {profileDialog?.type === 'company' && (
-            <Box>
-              <Typography><strong>Company:</strong> {profileDialog.data.companyName}</Typography>
-              <Typography><strong>Address:</strong> {profileDialog.data.companyAddress || 'Not set'}</Typography>
-              <Typography><strong>Phone:</strong> {profileDialog.data.companyPhone || 'Not set'}</Typography>
-              <Typography><strong>Email:</strong> {profileDialog.data.companyEmail || 'Not set'}</Typography>
-            </Box>
-          )}
-          {profileDialog?.type === 'workOrder' && (
-            <Box>
-              <Typography><strong>Work Order:</strong> #{profileDialog.data.workOrderID}</Typography>
-              <Typography><strong>Status:</strong> {profileDialog.data.status?.replaceAll('_', ' ')}</Typography>
-              <Typography><strong>Start:</strong> {formatDateTime(profileDialog.data.startDateTime)}</Typography>
-              <Typography><strong>Close:</strong> {formatDateTime(profileDialog.data.endDateTime)}</Typography>
-              <Typography><strong>Company:</strong> {profileDialog.data.company?.companyName || 'No company'}</Typography>
-              <Typography>
-                <strong>Assigned Workers:</strong>{' '}
-                {getWorkOrderWorkers(profileDialog.data).map(worker => `${worker.firstName} ${worker.lastName}`).join(', ') || 'Unassigned'}
-              </Typography>
-              <Typography><strong>Comments:</strong> {profileDialog.data.comment || 'No comments'}</Typography>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setProfileDialog(null)}>Close</Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 };
 
-export default AssignWork;
+export default ManageWorkOrders;

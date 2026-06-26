@@ -3,7 +3,7 @@ import { Alert, Box, Button, Paper, TextField, Typography } from '@mui/material'
 import { apiFetch } from '../api';
 import { useAuth } from './AuthContext';
 
-const ProfileTab = () => {
+const Settings = () => {
   const { user } = useAuth();
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState(null);
@@ -23,7 +23,7 @@ const ProfileTab = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3 }}>Profile</Typography>
+      <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3 }}>Settings</Typography>
       <Paper sx={{ p: 3, maxWidth: 600 }}>
         <Typography variant="h6">{user?.firstName} {user?.lastName}</Typography>
         <Typography color="text.secondary">{user?.username}</Typography>
@@ -53,4 +53,4 @@ const ProfileTab = () => {
   );
 };
 
-export default ProfileTab;
+export default Settings;

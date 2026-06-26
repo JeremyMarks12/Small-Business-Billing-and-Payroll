@@ -15,7 +15,11 @@ public class WorkOrderSummaryDTO {
 	private WorkOrderStatus status;
 	private LocalDateTime startDateTime;
 	private LocalDateTime endDateTime;
+	private LocalDateTime createdAt;
+	private LocalDateTime lastModifiedAt;
+	private LocalDateTime archivedAt;
 	private String comment;
+	private boolean archived;
 	private double totalPrice;
 	private int fileNo;
 	
@@ -29,6 +33,10 @@ public class WorkOrderSummaryDTO {
 			WorkOrderStatus status,
 			LocalDateTime startDateTime,
 			LocalDateTime endDateTime,
+			LocalDateTime createdAt,
+			LocalDateTime lastModifiedAt,
+			boolean archived,
+			LocalDateTime archivedAt,
 			String comment,
 			double totalPrice,
 			int fileNo) 
@@ -40,6 +48,10 @@ public class WorkOrderSummaryDTO {
 		this.setStatus(status);
 		this.setStartDateTime(startDateTime);
 		this.setEndDateTime(endDateTime);
+		this.setCreatedAt(createdAt);
+		this.setLastModifiedAt(lastModifiedAt);
+		this.setArchived(archived);
+		this.setArchivedAt(archivedAt);
 		this.setComment(comment);
 		this.setTotalPrice(totalPrice);
 		this.setFileNo(fileNo);
@@ -67,6 +79,22 @@ public class WorkOrderSummaryDTO {
 	}
 	public LocalDateTime getEndDateTime() {
 		return endDateTime;
+	}
+
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
+
+	public LocalDateTime getLastModifiedAt() {
+		return lastModifiedAt;
+	}
+
+	public boolean isArchived() {
+		return archived;
+	}
+
+	public LocalDateTime getArchivedAt() {
+		return archivedAt;
 	}
 	
 	public String getComment() {
@@ -105,6 +133,22 @@ public class WorkOrderSummaryDTO {
 
 	public void setEndDateTime(LocalDateTime endDateTime) {
 		this.endDateTime = endDateTime;
+	}
+
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
+	}
+
+	public void setLastModifiedAt(LocalDateTime lastModifiedAt) {
+		this.lastModifiedAt = lastModifiedAt;
+	}
+
+	public void setArchived(boolean archived) {
+		this.archived = archived;
+	}
+
+	public void setArchivedAt(LocalDateTime archivedAt) {
+		this.archivedAt = archivedAt;
 	}
 
 	public void setComment(String comment) {

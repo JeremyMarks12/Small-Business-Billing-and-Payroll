@@ -167,6 +167,8 @@ const WorkOrderDetail = () => {
                   Line Total
                 </TableSortLabel>
               </TableCell>
+              <TableCell>Added</TableCell>
+              <TableCell>Last Updated</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -177,16 +179,19 @@ const WorkOrderDetail = () => {
                 <TableCell align="right">{item.quantity}</TableCell>
                 <TableCell align="right">{money(item.price)}</TableCell>
                 <TableCell align="right">{money(Number(item.quantity) * Number(item.price))}</TableCell>
+                <TableCell>{formatDateTime(item.createdAt)}</TableCell>
+                <TableCell>{formatDateTime(item.lastModifiedAt)}</TableCell>
               </TableRow>
             ))}
             {!items.length && (
               <TableRow>
-                <TableCell colSpan={5}>No items are associated with this work order.</TableCell>
+                <TableCell colSpan={7}>No items are associated with this work order.</TableCell>
               </TableRow>
             )}
             <TableRow>
               <TableCell colSpan={4} align="right" sx={{ fontWeight: 600 }}>Total</TableCell>
               <TableCell align="right" sx={{ fontWeight: 600 }}>{money(total)}</TableCell>
+              <TableCell colSpan={2} />
             </TableRow>
           </TableBody>
         </Table>

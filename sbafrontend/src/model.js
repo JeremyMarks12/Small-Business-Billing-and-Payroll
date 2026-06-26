@@ -3,13 +3,19 @@ export const normalizeWorker = (worker = {}) => ({
   firstName: worker.workerFName ?? worker.firstName ?? '',
   lastName: worker.workerLName ?? worker.lastName ?? '',
   username: worker.workerUser ?? worker.username ?? '',
+  email: worker.workerEmail ?? worker.email ?? '',
   isAdmin: worker.admin ?? worker.isAdmin ?? false,
+  createdAt: worker.createdAt ?? null,
+  lastModifiedAt: worker.lastModifiedAt ?? null,
+  archived: worker.archived ?? false,
+  archivedAt: worker.archivedAt ?? null,
 });
 
 export const workerPayload = (worker) => ({
   workerFName: worker.firstName.trim(),
   workerLName: worker.lastName.trim(),
   workerUser: worker.username.trim(),
+  workerEmail: worker.email?.trim?.() ?? '',
   workerPW: worker.password,
   admin: Boolean(worker.admin ?? worker.isAdmin),
 });
@@ -19,4 +25,3 @@ export const getWorkOrderWorkers = (workOrder = {}) =>
 
 export const formatDateTime = (value) =>
   value ? new Date(value).toLocaleString() : 'Not set';
-

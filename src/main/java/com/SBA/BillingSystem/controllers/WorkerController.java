@@ -24,7 +24,19 @@ public class WorkerController {
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public List<Worker> getAllWorkers() {
+        return workerService.findActive();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/all-with-archived")
+    public List<Worker> getAllWorkersIncludingArchived() {
         return workerService.findAll();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/archived")
+    public List<Worker> getArchivedWorkers() {
+        return workerService.findArchived();
     }
 
     @GetMapping("/{id}")
@@ -58,9 +70,29 @@ public class WorkerController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/{id}")
+    public Worker updateWorker(@PathVariable Integer id, @RequestBody Worker worker) {
+    	return workerService.updateWorker(id, worker);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
-    public void deleteWorker(@PathVariable Integer id) {
-    	workerService.deleteById(id);
+    public ResponseEntity<Void> archiveWorker(@PathVariable Integer id) {
+    	workerService.archiveById(id);
+    	return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/{id}/restore")
+    public Worker restoreWorker(@PathVariable Integer id) {
+    	return workerService.restoreById(id);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/{id}/permanent")
+    public ResponseEntity<Void> deleteWorkerPermanently(@PathVariable Integer id) {
+    	workerService.deletePermanentlyById(id);
+    	return ResponseEntity.noContent().build();
     }
     
     @PreAuthorize("hasRole('ADMIN')")

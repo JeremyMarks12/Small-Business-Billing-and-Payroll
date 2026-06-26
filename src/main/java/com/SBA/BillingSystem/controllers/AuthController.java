@@ -71,6 +71,7 @@ public class AuthController {
             		worker.getWorkerUser(),
             		worker.getWorkerFName(),
             		worker.getWorkerLName(),
+            		worker.getWorkerEmail(),
             		worker.isAdmin());
 
             return ResponseEntity.ok(response);

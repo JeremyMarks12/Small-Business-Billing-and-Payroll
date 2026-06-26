@@ -25,8 +25,8 @@ class WorkerUserDetailsServiceTest {
 
     @Test
     void loadUserByUsernameCreatesAdminUserDetails() {
-        Worker worker = new Worker("Pat", "Lee", "PatLee", "encoded-password", true);
-        when(workerRepository.findByWorkerUserIgnoreCase("patlee"))
+        Worker worker = new Worker("Pat", "Lee", "PatLee", "PatLee@test.com", "encoded-password", true);
+        when(workerRepository.findByWorkerUserIgnoreCaseAndArchivedFalse("patlee"))
                 .thenReturn(Optional.of(worker));
         WorkerUserDetailsService service = new WorkerUserDetailsService(workerRepository);
 
@@ -37,13 +37,13 @@ class WorkerUserDetailsServiceTest {
         assertThat(details.getAuthorities())
                 .extracting("authority")
                 .containsExactly("ROLE_ADMIN");
-        verify(workerRepository).findByWorkerUserIgnoreCase("patlee");
+        verify(workerRepository).findByWorkerUserIgnoreCaseAndArchivedFalse("patlee");
     }
 
     @Test
     void loadUserByUsernameCreatesWorkerUserDetails() {
-        Worker worker = new Worker("Sam", "Hill", "shill", "encoded-password", false);
-        when(workerRepository.findByWorkerUserIgnoreCase("shill"))
+        Worker worker = new Worker("Sam", "Hill", "shill", "shill@test.com", "encoded-password", false);
+        when(workerRepository.findByWorkerUserIgnoreCaseAndArchivedFalse("shill"))
                 .thenReturn(Optional.of(worker));
         WorkerUserDetailsService service = new WorkerUserDetailsService(workerRepository);
 
@@ -56,7 +56,7 @@ class WorkerUserDetailsServiceTest {
 
     @Test
     void loadUserByUsernameRejectsUnknownWorker() {
-        when(workerRepository.findByWorkerUserIgnoreCase("missing"))
+        when(workerRepository.findByWorkerUserIgnoreCaseAndArchivedFalse("missing"))
                 .thenReturn(Optional.empty());
         WorkerUserDetailsService service = new WorkerUserDetailsService(workerRepository);
 

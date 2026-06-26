@@ -21,7 +21,7 @@ import { useAuth } from './AuthContext';
 
 const formatStatus = (status = '') => status.replaceAll('_', ' ');
 
-const MyWorkOrders = () => {
+const MyAssignments = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [workOrders, setWorkOrders] = useState([]);
@@ -31,21 +31,21 @@ const MyWorkOrders = () => {
   useEffect(() => {
     apiFetch('/workorders')
       .then(data => setWorkOrders(data.filter(order =>
-        getWorkOrderWorkers(order).some(worker => worker.workerID === user?.workerID)
+        !order.archived && getWorkOrderWorkers(order).some(worker => worker.workerID === user?.workerID)
       )))
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   }, [user]);
 
   const openWorkOrder = (workOrderID) => {
-    navigate(user?.isAdmin ? `/admin/my-workorders/${workOrderID}` : `/worker/my-workorders/${workOrderID}`);
+    navigate(user?.isAdmin ? `/admin/my-assignments/${workOrderID}` : `/worker/my-assignments/${workOrderID}`);
   };
 
   if (loading) return <Box sx={{ textAlign: 'center', mt: 8 }}><CircularProgress /></Box>;
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3 }}>My Work Orders</Typography>
+      <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3 }}>My Assignments</Typography>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       {!workOrders.length && <Alert severity="info">No work orders are assigned to you.</Alert>}
 
@@ -57,7 +57,6 @@ const MyWorkOrders = () => {
               <TableCell>Company</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>Start</TableCell>
-              <TableCell>Close</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -71,7 +70,6 @@ const MyWorkOrders = () => {
                 <TableCell>{order.company?.companyName || 'No company'}</TableCell>
                 <TableCell><Chip label={formatStatus(order.status)} size="small" /></TableCell>
                 <TableCell>{formatDateTime(order.startDateTime)}</TableCell>
-                <TableCell>{formatDateTime(order.endDateTime)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -81,4 +79,4 @@ const MyWorkOrders = () => {
   );
 };
 
-export default MyWorkOrders;
+export default MyAssignments;

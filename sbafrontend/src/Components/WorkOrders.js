@@ -13,43 +13,23 @@ import {
     Chip,
     Alert,
     Button,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    FormControl,
-    InputLabel,
-    MenuItem,
-    Select,
-    TextField,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../api';
-import { formatDateTime, getWorkOrderWorkers, normalizeWorker } from '../model';
+import { formatDateTime, getWorkOrderWorkers } from '../model';
 import { useAuth } from './AuthContext';
 
-const WorkOrderFunctions = () => {
+const WorkOrders = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
     const [workOrders, setWorkOrders] = useState([]);
-    const [workers, setWorkers] = useState([]);
-    const [companies, setCompanies] = useState([]);
     const [orderBy, setOrderBy] = useState('workOrderID');
     const [order, setOrder] = useState('asc');
     const [error, setError] = useState('');
-    const [createOpen, setCreateOpen] = useState(false);
-    const [workerID, setWorkerID] = useState('');
-    const [companyID, setCompanyID] = useState('');
-    const [comment, setComment] = useState('');
-    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        Promise.all([apiFetch('/workorders'), apiFetch('/workers'), apiFetch('/companies/all')])
-            .then(([workOrderData, workerData, companyData]) => {
-                setWorkOrders(workOrderData);
-                setWorkers(workerData.map(normalizeWorker));
-                setCompanies(companyData);
-            })
+        apiFetch('/workorders')
+            .then(setWorkOrders)
             .catch(err => setError(err.message));
     }, []);
 
@@ -76,47 +56,10 @@ const WorkOrderFunctions = () => {
         return 0;
     });
 
-    const closeCreateDialog = () => {
-        setCreateOpen(false);
-        setWorkerID('');
-        setCompanyID('');
-        setComment('');
-    };
-
-    const createWorkOrder = async () => {
-        const worker = workers.find(item => item.workerID === Number(workerID));
-        const company = companies.find(item => item.companyID === Number(companyID));
-
-        setSaving(true);
-        setError('');
-        try {
-            const created = await apiFetch('/workorders', {
-                method: 'POST',
-                body: JSON.stringify({
-                    workers: worker ? [{
-                        workerID: worker.workerID,
-                        workerFName: worker.firstName,
-                        workerLName: worker.lastName,
-                        workerUser: worker.username,
-                        admin: worker.isAdmin,
-                    }] : [],
-                    company: company || null,
-                    comment: comment.trim(),
-                }),
-            });
-            setWorkOrders(current => [...current, created]);
-            closeCreateDialog();
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setSaving(false);
-        }
-    };
-
     const openWorkOrder = (workOrder) => {
         const assignedToUser = getWorkOrderWorkers(workOrder).some(worker => worker.workerID === user?.workerID);
         if (assignedToUser && workOrder.status === 'IN_PROCESS') {
-            navigate(`/admin/my-workorders/${workOrder.workOrderID}`);
+            navigate(`/admin/my-assignments/${workOrder.workOrderID}`);
             return;
         }
 
@@ -127,9 +70,8 @@ const WorkOrderFunctions = () => {
         <Box sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
                 <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                    View Work Orders
+                    Active Work Orders
                 </Typography>
-                <Button variant="contained" onClick={() => setCreateOpen(true)}>Create Work Order</Button>
             </Box>
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
@@ -204,52 +146,8 @@ const WorkOrderFunctions = () => {
                     </TableBody>
                 </Table>
             </TableContainer>
-
-            <Dialog open={createOpen} onClose={closeCreateDialog} fullWidth maxWidth="sm">
-                <DialogTitle>Create Work Order</DialogTitle>
-                <DialogContent>
-                    <FormControl fullWidth margin="normal">
-                        <InputLabel>Worker or Admin</InputLabel>
-                        <Select value={workerID} label="Worker or Admin" onChange={event => setWorkerID(event.target.value)}>
-                            <MenuItem value="">No worker selected</MenuItem>
-                            {workers.map(worker => (
-                                <MenuItem key={worker.workerID} value={worker.workerID}>
-                                    {worker.firstName} {worker.lastName}{worker.isAdmin ? ' (Admin)' : ''}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-
-                    <FormControl fullWidth margin="normal">
-                        <InputLabel>Company</InputLabel>
-                        <Select value={companyID} label="Company" onChange={event => setCompanyID(event.target.value)}>
-                            <MenuItem value="">No company selected</MenuItem>
-                            {companies.map(company => (
-                                <MenuItem key={company.companyID} value={company.companyID}>{company.companyName}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-
-                    <TextField
-                        label="Comments"
-                        value={comment}
-                        onChange={event => setComment(event.target.value)}
-                        fullWidth
-                        multiline
-                        minRows={4}
-                        margin="normal"
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={closeCreateDialog}>Cancel</Button>
-                    <Button variant="contained" onClick={createWorkOrder} disabled={saving}>
-                        Create Work Order
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
         </Box>
     );
 };
 
-export default WorkOrderFunctions;
+export default WorkOrders;

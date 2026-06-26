@@ -1,7 +1,7 @@
 package com.SBA.BillingSystem.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.never;
@@ -20,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.SBA.BillingSystem.entities.WorkOrder;
 import com.SBA.BillingSystem.entities.Worker;
+import com.SBA.BillingSystem.enums.WorkOrderStatus;
 import com.SBA.BillingSystem.repositories.WorkerRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -36,7 +37,9 @@ class WorkerServiceTest {
 
     @Test
     void createWorkerEncodesPasswordBeforeSaving() {
-        Worker worker = new Worker("Pat", "Lee", "plee", "password123", false);
+        Worker worker = new Worker("Pat", "Lee", "plee", "plee@test.com", "password123", false);
+        when(workerRepository.findByWorkerUserIgnoreCase("plee")).thenReturn(Optional.empty());
+        when(workerRepository.findByWorkerEmailIgnoreCase("plee@test.com")).thenReturn(Optional.empty());
         when(passwordEncoder.encode("password123")).thenReturn("encoded-password");
         when(workerRepository.save(worker)).thenReturn(worker);
 
@@ -50,8 +53,8 @@ class WorkerServiceTest {
 
     @Test
     void createWorkerRejectsMissingOrShortPassword() {
-        Worker missingPassword = new Worker("Pat", "Lee", "plee", " ", false);
-        Worker shortPassword = new Worker("Sam", "Hill", "shill", "short", false);
+        Worker missingPassword = new Worker("Pat", "Lee", "plee", "plee@test.com", " ", false);
+        Worker shortPassword = new Worker("Sam", "Hill", "shill", "shill@test.com", "short", false);
 
         assertThrows(IllegalArgumentException.class,
                 () -> workerService.createWorker(missingPassword));
@@ -66,42 +69,89 @@ class WorkerServiceTest {
     void findMethodsReturnRepositoryResults() {
         Worker worker = new Worker();
         List<Worker> workers = List.of(worker);
-        when(workerRepository.findByWorkerUserIgnoreCase("PAT")).thenReturn(Optional.of(worker));
+        when(workerRepository.findByWorkerUserIgnoreCaseAndArchivedFalse("PAT")).thenReturn(Optional.of(worker));
         when(workerRepository.findById(1)).thenReturn(Optional.of(worker));
         when(workerRepository.findAll()).thenReturn(workers);
+        when(workerRepository.findByArchivedFalse()).thenReturn(workers);
 
         assertEquals(Optional.of(worker), workerService.findByUsername("PAT"));
         assertEquals(Optional.of(worker), workerService.findById(1));
         assertSame(workers, workerService.findAll());
+        assertSame(workers, workerService.findActive());
     }
 
     @Test
-    void deleteByIdRemovesWorkerFromAssignedWorkOrders() {
+    void archiveByIdMarksWorkerArchived() {
         Worker worker = new Worker();
-        WorkOrder first = new WorkOrder();
-        WorkOrder second = new WorkOrder();
-        first.addWorker(worker);
-        second.addWorker(worker);
         when(workerRepository.findById(1)).thenReturn(Optional.of(worker));
 
-        workerService.deleteById(1);
+        workerService.archiveById(1);
 
-        assertFalse(first.getWorkers().contains(worker));
-        assertFalse(second.getWorkers().contains(worker));
-        verify(workerRepository).deleteById(1);
+        assertEquals(true, worker.isArchived());
+        assertNotNull(worker.getArchivedAt());
+        verify(workerRepository).save(worker);
     }
 
     @Test
-    void deleteByIdRejectsUnknownWorker() {
+    void archiveByIdRejectsUnknownWorker() {
         when(workerRepository.findById(99)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalArgumentException.class, () -> workerService.deleteById(99));
+        assertThrows(IllegalArgumentException.class, () -> workerService.archiveById(99));
         verify(workerRepository, never()).deleteById(99);
     }
 
     @Test
+    void archiveByIdRejectsWorkerAssignedToOpenWorkOrder() {
+        Worker worker = new Worker();
+        WorkOrder workOrder = new WorkOrder();
+        workOrder.setStatus(WorkOrderStatus.IN_PROCESS);
+        workOrder.addWorker(worker);
+        when(workerRepository.findById(1)).thenReturn(Optional.of(worker));
+
+        assertThrows(IllegalStateException.class, () -> workerService.archiveById(1));
+        verify(workerRepository, never()).save(worker);
+    }
+
+    @Test
+    void restoreByIdClearsArchiveFields() {
+        Worker worker = new Worker();
+        worker.setArchived(true);
+        when(workerRepository.findById(1)).thenReturn(Optional.of(worker));
+        when(workerRepository.save(worker)).thenReturn(worker);
+
+        Worker result = workerService.restoreById(1);
+
+        assertSame(worker, result);
+        assertEquals(false, worker.isArchived());
+        assertEquals(null, worker.getArchivedAt());
+    }
+
+    @Test
+    void deletePermanentlyByIdRemovesArchivedWorkerAndDetachesWorkOrders() {
+        Worker worker = new Worker();
+        worker.setWorkerID(1);
+        worker.setArchived(true);
+        WorkOrder workOrder = new WorkOrder();
+        workOrder.addWorker(worker);
+        when(workerRepository.findById(1)).thenReturn(Optional.of(worker));
+
+        workerService.deletePermanentlyById(1);
+
+        assertEquals(0, workOrder.getWorkers().size());
+        verify(workerRepository).delete(worker);
+    }
+
+    @Test
+    void deletePermanentlyByIdRejectsActiveWorker() {
+        Worker worker = new Worker();
+        when(workerRepository.findById(1)).thenReturn(Optional.of(worker));
+
+        assertThrows(IllegalStateException.class, () -> workerService.deletePermanentlyById(1));
+    }
+
+    @Test
     void resetPasswordEncodesAndSavesNewPassword() {
-        Worker worker = new Worker("Pat", "Lee", "plee", "old-password", false);
+        Worker worker = new Worker("Pat", "Lee", "plee", "plee@test.com", "old-password", false);
         when(workerRepository.findById(1)).thenReturn(Optional.of(worker));
         when(passwordEncoder.encode("new-password")).thenReturn("encoded-new-password");
 
