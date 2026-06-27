@@ -212,17 +212,6 @@ public class WorkOrderServiceTest {
     }
 
     @Test
-    void forceArchiveByIdArchivesIncompleteWorkOrder() {
-        WorkOrder workOrder = orderWithStatus(WorkOrderStatus.OPEN);
-        when(workOrderRepository.findById(1)).thenReturn(Optional.of(workOrder));
-
-        workOrderService.forceArchiveById(1);
-
-        assertEquals(true, workOrder.isArchived());
-        verify(workOrderRepository).save(workOrder);
-    }
-
-    @Test
     void deletePermanentlyByIdRemovesArchivedWorkOrder() {
         WorkOrder workOrder = new WorkOrder();
         workOrder.setArchived(true);

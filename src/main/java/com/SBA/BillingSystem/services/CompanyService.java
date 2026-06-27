@@ -87,14 +87,12 @@ public class CompanyService{
 	        Company company = companyRepository.findById(id)
 	                .orElseThrow(() -> new IllegalArgumentException("Company not found"));
 
-	        if (!company.isArchived()) {
-	            throw new IllegalStateException("Only archived companies can be permanently deleted");
+	        if (company.isArchived()) {
+	            throw new IllegalStateException("Archived companies can only be restored");
 	        }
 
-	        for (WorkOrder workOrder : workOrderRepository.findAll()) {
-	            if (workOrder.getCompany() != null && workOrder.getCompany().getCompanyID() == company.getCompanyID()) {
-	                workOrder.setCompany(null);
-	            }
+	        if (!workOrderRepository.findByCompany_CompanyID(company.getCompanyID()).isEmpty()) {
+	            throw new IllegalStateException("Company cannot be permanently deleted while work orders are attached");
 	        }
 
 	        companyRepository.delete(company);

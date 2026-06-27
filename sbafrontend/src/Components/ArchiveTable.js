@@ -22,7 +22,7 @@ const archiveConfig = {
     title: 'Archived Work Orders',
     endpoint: '/workorders/archived',
     restorePath: item => `/workorders/${item.workOrderID}/restore`,
-    deletePath: item => `/workorders/${item.workOrderID}/permanent`,
+    canDelete: false,
     key: item => item.workOrderID,
     empty: 'No archived work orders found.',
     columns: [
@@ -47,7 +47,7 @@ const archiveConfig = {
     title: 'Archived Companies',
     endpoint: '/companies/archived',
     restorePath: item => `/companies/${item.companyID}/restore`,
-    deletePath: item => `/companies/${item.companyID}/permanent`,
+    canDelete: false,
     key: item => item.companyID,
     empty: 'No archived companies found.',
     columns: [
@@ -68,7 +68,7 @@ const archiveConfig = {
     title: 'Archived Workers',
     endpoint: '/workers/archived',
     restorePath: item => `/workers/${item.workerID}/restore`,
-    deletePath: item => `/workers/${item.workerID}/permanent`,
+    canDelete: false,
     key: item => item.workerID,
     empty: 'No archived workers found.',
     columns: [
@@ -126,6 +126,7 @@ const ArchiveTable = ({ type }) => {
   };
 
   const deleteItem = async (item) => {
+    if (config.canDelete === false) return;
     if (!window.confirm('Permanently delete this archived item? This cannot be undone.')) return;
 
     const id = config.key(item);
@@ -173,15 +174,17 @@ const ArchiveTable = ({ type }) => {
                     >
                       Restore
                     </Button>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      color="error"
-                      disabled={deletingID === config.key(item) || restoringID === config.key(item)}
-                      onClick={() => deleteItem(item)}
-                    >
-                      Delete
-                    </Button>
+                    {config.canDelete !== false && (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="error"
+                        disabled={deletingID === config.key(item) || restoringID === config.key(item)}
+                        onClick={() => deleteItem(item)}
+                      >
+                        Delete
+                      </Button>
+                    )}
                   </Stack>
                 </TableCell>
               </TableRow>

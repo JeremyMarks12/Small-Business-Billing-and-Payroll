@@ -64,14 +64,16 @@ public class AuthController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
 
-            Worker worker = result.get();
+            Worker worker = workerService.recordLogin(authentication.getName());
 
             LoginResponse response = new LoginResponse(
             		worker.getWorkerID(),
             		worker.getWorkerUser(),
             		worker.getWorkerFName(),
             		worker.getWorkerLName(),
+            		worker.getWorkerDisplayName(),
             		worker.getWorkerEmail(),
+            		worker.getLastLoginAt(),
             		worker.isAdmin());
 
             return ResponseEntity.ok(response);

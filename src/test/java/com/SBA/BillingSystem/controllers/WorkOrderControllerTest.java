@@ -82,11 +82,8 @@ class WorkOrderControllerTest {
                 .andExpect(jsonPath("$.workOrderID").value(2));
         mockMvc.perform(delete("/workorders/2"))
                 .andExpect(status().isNoContent());
-        mockMvc.perform(put("/workorders/2/force-archive"))
-                .andExpect(status().isNoContent());
 
         verify(workOrderService).archiveById(2);
-        verify(workOrderService).forceArchiveById(2);
     }
 
     @Test

@@ -108,10 +108,7 @@ public class WorkOrderService{
     @Transactional
     public WorkOrder reassignWorkOrder(Integer workOrderID, Integer workerID) {
         WorkOrder workOrder = getRequiredWorkOrder(workOrderID);
-
-        if (workOrder.getStatus() == WorkOrderStatus.COMPLETE) {
-            throw new IllegalStateException("Completed work orders cannot be reassigned");
-        }
+        ensureWorkOrderCanBeEdited(workOrder);
 
         Worker worker = workerRepository.findById(workerID)
                 .orElseThrow(() -> new IllegalArgumentException("Worker not found"));
@@ -136,6 +133,8 @@ public class WorkOrderService{
     @Transactional
     public WorkOrder removeWorkerFromWorkOrder(Integer workOrderID, Integer workerID) {
         WorkOrder workOrder = getRequiredWorkOrder(workOrderID);
+        ensureWorkOrderCanBeEdited(workOrder);
+
         Worker worker = workerRepository.findById(workerID)
                 .orElseThrow(() -> new IllegalArgumentException("Worker not found"));
 
@@ -156,6 +155,7 @@ public class WorkOrderService{
     @Transactional
     public WorkOrder removeCompanyFromWorkOrder(Integer workOrderID) {
         WorkOrder workOrder = getRequiredWorkOrder(workOrderID);
+        ensureWorkOrderCanBeEdited(workOrder);
         workOrder.setCompany(null);
 
         return workOrderRepository.save(workOrder);
@@ -164,6 +164,8 @@ public class WorkOrderService{
     @Transactional
     public WorkOrder assignCompanyToWorkOrder(Integer workOrderID, Integer companyID) {
         WorkOrder workOrder = getRequiredWorkOrder(workOrderID);
+        ensureWorkOrderCanBeEdited(workOrder);
+
         Company company = companyRepository.findById(companyID)
                 .orElseThrow(() -> new IllegalArgumentException("Company not found"));
 
@@ -179,6 +181,7 @@ public class WorkOrderService{
     @Transactional
     public WorkOrder updateComment(Integer workOrderID, String comment) {
         WorkOrder workOrder = getRequiredWorkOrder(workOrderID);
+        ensureWorkOrderCanBeEdited(workOrder);
         workOrder.setComment(comment);
 
         return workOrderRepository.save(workOrder);
@@ -187,6 +190,8 @@ public class WorkOrderService{
     @Transactional
     public WorkOrder addItem(Integer workOrderID, WorkOrderItem item) {
         WorkOrder workOrder = getRequiredWorkOrder(workOrderID);
+        ensureWorkOrderCanBeEdited(workOrder);
+
         if (item.getItemType() == null) {
             throw new IllegalArgumentException("Item type is required");
         }
@@ -199,6 +204,8 @@ public class WorkOrderService{
     @Transactional
     public WorkOrder updateItem(Integer workOrderID, Integer itemID, WorkOrderItem request) {
         WorkOrder workOrder = getRequiredWorkOrder(workOrderID);
+        ensureWorkOrderCanBeEdited(workOrder);
+
         WorkOrderItem item = workOrder.getItems().stream()
                 .filter(existingItem -> existingItem.getWorkOrderItemID() == itemID)
                 .findFirst()
@@ -223,12 +230,6 @@ public class WorkOrderService{
         archiveWorkOrder(workOrder);
     }
 
-    @Transactional
-    public void forceArchiveById(Integer id) {
-        WorkOrder workOrder = getRequiredWorkOrder(id);
-        archiveWorkOrder(workOrder);
-    }
-
     private void archiveWorkOrder(WorkOrder workOrder) {
         workOrder.setArchived(true);
         workOrder.setArchivedAt(LocalDateTime.now());
@@ -247,12 +248,20 @@ public class WorkOrderService{
     public void deletePermanentlyById(Integer id) {
         WorkOrder workOrder = getRequiredWorkOrder(id);
 
-        if (!workOrder.isArchived()) {
-            throw new IllegalStateException("Only archived work orders can be permanently deleted");
+        if (!workOrder.isArchived() && !canDeleteMistakenWorkOrder(workOrder)) {
+            throw new IllegalStateException("Only archived or empty open work orders can be permanently deleted");
         }
 
         workOrder.setWorkers(new HashSet<>());
         workOrderRepository.delete(workOrder);
+    }
+
+    private boolean canDeleteMistakenWorkOrder(WorkOrder workOrder) {
+        boolean hasItems = workOrder.getItems() != null && !workOrder.getItems().isEmpty();
+
+        return workOrder.getStatus() == WorkOrderStatus.OPEN &&
+                workOrder.getEndDateTime() == null &&
+                !hasItems;
     }
     
     public long count() {
@@ -264,6 +273,7 @@ public class WorkOrderService{
     @Transactional
     public WorkOrder submitForReview(Integer workOrderID) {
     	WorkOrder workOrder = getRequiredWorkOrder(workOrderID);
+        ensureWorkOrderCanBeEdited(workOrder);
     	
     	if (workOrder.getStatus() != WorkOrderStatus.IN_PROCESS &&
     			workOrder.getStatus() != WorkOrderStatus.OPEN) {
@@ -312,6 +322,12 @@ public class WorkOrderService{
         }
 
         return result.get();
+    }
+
+    private void ensureWorkOrderCanBeEdited(WorkOrder workOrder) {
+        if (workOrder.getStatus() == WorkOrderStatus.COMPLETE) {
+            throw new IllegalStateException("Completed work orders are sealed and cannot be edited");
+        }
     }
     
     private void validateForCompletion(WorkOrder workOrder) {

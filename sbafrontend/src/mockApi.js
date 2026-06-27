@@ -24,6 +24,8 @@ const withAuditDefaults = (item) => ({
 
 const withWorkerDefaults = (worker) => ({
   workerEmail: worker.workerEmail || `${worker.workerUser || `worker${worker.workerID}`}@example.test`,
+  workerDisplayName: worker.workerDisplayName || '',
+  lastLoginAt: worker.lastLoginAt || null,
   ...withAuditDefaults(worker),
 });
 
@@ -88,6 +90,11 @@ const findWorker = (workerID) => state.workers.find(worker => worker.workerID ==
 const findCompany = (companyID) => state.companies.find(company => company.companyID === Number(companyID));
 const findWorkOrder = (workOrderID) => state.workOrders.find(order => order.workOrderID === Number(workOrderID));
 const isOpenWorkOrder = (order) => order.status !== 'COMPLETE';
+const ensureWorkOrderCanBeEdited = (order) => {
+  if (order.status === 'COMPLETE') {
+    throw new MockApiError('Completed work orders are sealed and cannot be edited', 409);
+  }
+};
 
 const touch = (item) => {
   item.lastModifiedAt = now();
@@ -113,7 +120,9 @@ const createLoginResponse = (worker) => ({
   workerUser: worker.workerUser,
   workerFName: worker.workerFName,
   workerLName: worker.workerLName,
+  workerDisplayName: worker.workerDisplayName,
   workerEmail: worker.workerEmail,
+  lastLoginAt: worker.lastLoginAt,
   admin: worker.admin,
 });
 
@@ -125,6 +134,10 @@ const handleAuth = (segments, method, options) => {
     if (!worker || worker.workerPW !== password) {
       throw new MockApiError('Invalid username or password', 401);
     }
+
+    worker.lastLoginAt = now();
+    touch(worker);
+    saveState();
 
     return createLoginResponse(worker);
   }
@@ -164,6 +177,7 @@ const handleWorkers = (segments, method, options) => {
       workerID: nextId(state.workers, 'workerID'),
       workerFName: payload.workerFName,
       workerLName: payload.workerLName,
+      workerDisplayName: payload.workerDisplayName || '',
       workerUser: payload.workerUser,
       workerEmail: payload.workerEmail,
       workerPW: payload.workerPW,
@@ -207,14 +221,17 @@ const handleWorkers = (segments, method, options) => {
   }
 
   if (segments[2] === 'permanent' && method === 'DELETE') {
-    if (!worker.archived) {
-      throw new MockApiError('Only archived workers can be permanently deleted', 409);
+    if (worker.archived) {
+      throw new MockApiError('Archived workers can only be restored', 409);
     }
 
-    state.workOrders = state.workOrders.map(order => ({
-      ...order,
-      workers: order.workers.filter(item => item.workerID !== worker.workerID),
-    }));
+    const hasAttachedWorkOrders = state.workOrders.some(order =>
+      order.workers.some(item => item.workerID === worker.workerID)
+    );
+    if (hasAttachedWorkOrders) {
+      throw new MockApiError('Worker cannot be permanently deleted while work orders are attached', 409);
+    }
+
     state.workers = state.workers.filter(item => item.workerID !== worker.workerID);
     saveState();
     return null;
@@ -230,9 +247,34 @@ const handleWorkers = (segments, method, options) => {
     Object.assign(worker, {
       workerFName: payload.workerFName ?? worker.workerFName,
       workerLName: payload.workerLName ?? worker.workerLName,
+      workerDisplayName: payload.workerDisplayName ?? worker.workerDisplayName,
       workerUser: payload.workerUser ?? worker.workerUser,
       workerEmail: payload.workerEmail ?? worker.workerEmail,
       admin: payload.admin ?? worker.admin,
+    });
+    touch(worker);
+    state.workOrders = state.workOrders.map(order => ({
+      ...order,
+      workers: order.workers.map(item => (
+        item.workerID === worker.workerID ? withoutPassword(worker) : item
+      )),
+    }));
+    saveState();
+    return withoutPassword(worker);
+  }
+
+  if (segments[2] === 'profile' && method === 'PUT') {
+    const payload = bodyAsJson(options);
+    if (payload.workerEmail && state.workers.some(item =>
+      item.workerID !== worker.workerID && item.workerEmail?.toLowerCase() === payload.workerEmail.toLowerCase()
+    )) {
+      throw new MockApiError('Email already exists', 409);
+    }
+    Object.assign(worker, {
+      workerFName: payload.workerFName ?? worker.workerFName,
+      workerLName: payload.workerLName ?? worker.workerLName,
+      workerDisplayName: payload.workerDisplayName ?? worker.workerDisplayName,
+      workerEmail: payload.workerEmail ?? worker.workerEmail,
     });
     touch(worker);
     state.workOrders = state.workOrders.map(order => ({
@@ -320,13 +362,15 @@ const handleCompanies = (segments, method, options) => {
   }
 
   if (segments[2] === 'permanent' && method === 'DELETE') {
-    if (!company.archived) {
-      throw new MockApiError('Only archived companies can be permanently deleted', 409);
+    if (company.archived) {
+      throw new MockApiError('Archived companies can only be restored', 409);
     }
 
-    state.workOrders = state.workOrders.map(order => (
-      order.company?.companyID === Number(companyID) ? { ...order, company: null } : order
-    ));
+    const hasAttachedWorkOrders = state.workOrders.some(order => order.company?.companyID === company.companyID);
+    if (hasAttachedWorkOrders) {
+      throw new MockApiError('Company cannot be permanently deleted while work orders are attached', 409);
+    }
+
     state.companies = state.companies.filter(item => item.companyID !== company.companyID);
     saveState();
     return null;
@@ -418,12 +462,6 @@ const handleWorkOrders = (segments, method, options) => {
     return null;
   }
 
-  if (segments[2] === 'force-archive' && method === 'PUT') {
-    archiveEntity(workOrder);
-    saveState();
-    return null;
-  }
-
   if (segments[2] === 'restore' && method === 'PUT') {
     restoreEntity(workOrder);
     saveState();
@@ -431,8 +469,11 @@ const handleWorkOrders = (segments, method, options) => {
   }
 
   if (segments[2] === 'permanent' && method === 'DELETE') {
-    if (!workOrder.archived) {
-      throw new MockApiError('Only archived work orders can be permanently deleted', 409);
+    const hasItems = Boolean(workOrder.items?.length);
+    const canDeleteMistakenWorkOrder = workOrder.status === 'OPEN' && !workOrder.endDateTime && !hasItems;
+
+    if (!workOrder.archived && !canDeleteMistakenWorkOrder) {
+      throw new MockApiError('Only archived or empty open work orders can be permanently deleted', 409);
     }
 
     state.workOrders = state.workOrders.filter(item => item.workOrderID !== workOrder.workOrderID);
@@ -441,6 +482,8 @@ const handleWorkOrders = (segments, method, options) => {
   }
 
   if (segments[2] === 'workers' && segments[3] && method === 'DELETE') {
+    ensureWorkOrderCanBeEdited(workOrder);
+
     const workerID = Number(segments[3]);
     workOrder.workers = workOrder.workers.filter(worker => worker.workerID !== workerID);
     if (!workOrder.workers.length) {
@@ -453,6 +496,8 @@ const handleWorkOrders = (segments, method, options) => {
   }
 
   if (segments[2] === 'company' && method === 'DELETE') {
+    ensureWorkOrderCanBeEdited(workOrder);
+
     workOrder.company = null;
     touch(workOrder);
     saveState();
@@ -460,6 +505,8 @@ const handleWorkOrders = (segments, method, options) => {
   }
 
   if (segments[2] === 'company' && method === 'PUT') {
+    ensureWorkOrderCanBeEdited(workOrder);
+
     const { companyID } = bodyAsJson(options);
     const company = findCompany(companyID);
     if (!company) {
@@ -476,6 +523,8 @@ const handleWorkOrders = (segments, method, options) => {
   }
 
   if (segments[2] === 'comment' && method === 'PUT') {
+    ensureWorkOrderCanBeEdited(workOrder);
+
     const { comment = '' } = bodyAsJson(options);
     workOrder.comment = comment;
     touch(workOrder);
@@ -484,6 +533,8 @@ const handleWorkOrders = (segments, method, options) => {
   }
 
   if (segments[2] === 'items' && method === 'POST') {
+    ensureWorkOrderCanBeEdited(workOrder);
+
     const payload = bodyAsJson(options);
     const item = {
       workOrderItemID: nextId(workOrder.items || [], 'workOrderItemID'),
@@ -501,6 +552,8 @@ const handleWorkOrders = (segments, method, options) => {
   }
 
   if (segments[2] === 'items' && segments[3] && method === 'PUT') {
+    ensureWorkOrderCanBeEdited(workOrder);
+
     const itemID = Number(segments[3]);
     const payload = bodyAsJson(options);
     workOrder.items = (workOrder.items || []).map(item => (
@@ -520,14 +573,14 @@ const handleWorkOrders = (segments, method, options) => {
   }
 
   if (segments[2] === 'start' && method === 'PUT') {
+    ensureWorkOrderCanBeEdited(workOrder);
+
     workOrder.startDateTime = new Date().toISOString();
     return setWorkOrderStatus(workOrder, 'IN_PROCESS');
   }
 
   if (segments[2] === 'assign' && method === 'PUT') {
-    if (workOrder.status === 'COMPLETE') {
-      throw new MockApiError('Completed work orders cannot be reassigned', 400);
-    }
+    ensureWorkOrderCanBeEdited(workOrder);
 
     const { workerID } = bodyAsJson(options);
     const worker = findWorker(workerID);
@@ -549,6 +602,8 @@ const handleWorkOrders = (segments, method, options) => {
   }
 
   if (segments[2] === 'submit' && method === 'PUT') {
+    ensureWorkOrderCanBeEdited(workOrder);
+
     return setWorkOrderStatus(workOrder, 'IN_REVIEW');
   }
 

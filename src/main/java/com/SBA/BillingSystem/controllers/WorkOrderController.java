@@ -112,13 +112,6 @@ public class WorkOrderController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @PutMapping("/{id}/force-archive")
-    public ResponseEntity<Void> forceArchiveWorkOrder(@PathVariable Integer id) {
-    	workOrderService.forceArchiveById(id);
-    	return ResponseEntity.noContent().build();
-    }
-
-    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}/restore")
     public WorkOrder restoreWorkOrder(@PathVariable Integer id) {
     	return workOrderService.restoreById(id);

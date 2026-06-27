@@ -65,7 +65,7 @@ const ManageCompanies = () => {
   const loadData = useCallback(async () => {
     const [companyData, workOrderData] = await Promise.all([
       apiFetch('/companies/all'),
-      apiFetch('/workorders'),
+      apiFetch('/workorders/all-with-archived'),
     ]);
 
     setCompanies(companyData.sort((a, b) => a.companyName.localeCompare(b.companyName)));
@@ -91,10 +91,11 @@ const ManageCompanies = () => {
 
   const attachedWorkOrders = useMemo(
     () => selectedCompany
-      ? workOrders.filter(order => !order.archived && order.company?.companyID === selectedCompany.companyID)
+      ? workOrders.filter(order => order.company?.companyID === selectedCompany.companyID)
       : [],
     [selectedCompany, workOrders]
   );
+  const canDeleteSelectedCompany = Boolean(selectedCompany && attachedWorkOrders.length === 0);
 
   useEffect(() => {
     if (selectedCompany) {
@@ -147,7 +148,6 @@ const ManageCompanies = () => {
     setSaving(true);
 
     try {
-      await verifyPassword();
       const created = await apiFetch('/companies/add', {
         method: 'POST',
         body: JSON.stringify(createForm),
@@ -155,7 +155,6 @@ const ManageCompanies = () => {
       setCreateForm(emptyCompany);
       setCompanyID(String(created.companyID));
       await loadData();
-      closePasswordDialog();
       showMessage('Company created successfully.');
     } catch (error) {
       showMessage(error.message, 'error');
@@ -189,14 +188,30 @@ const ManageCompanies = () => {
 
     setSaving(true);
     try {
-      await verifyPassword();
       await apiFetch(`/companies/${company.companyID}`, { method: 'DELETE' });
       if (Number(companyID) === company.companyID) {
         setCompanyID('');
       }
       await loadData();
-      closePasswordDialog();
       showMessage('Company archived successfully.');
+    } catch (error) {
+      showMessage(error.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteCompany = async () => {
+    if (!selectedCompany || !canDeleteSelectedCompany) return;
+
+    setSaving(true);
+    try {
+      await verifyPassword();
+      await apiFetch(`/companies/${selectedCompany.companyID}/permanent`, { method: 'DELETE' });
+      setCompanyID('');
+      await loadData();
+      closePasswordDialog();
+      showMessage('Company permanently deleted.');
     } catch (error) {
       showMessage(error.message, 'error');
     } finally {
@@ -215,6 +230,10 @@ const ManageCompanies = () => {
     }
     if (pendingAction === 'archive') {
       archiveCompany(pendingCompany);
+      return;
+    }
+    if (pendingAction === 'delete') {
+      deleteCompany();
     }
   };
 
@@ -224,10 +243,7 @@ const ManageCompanies = () => {
 
       <Grid container spacing={3} alignItems="stretch">
         <Grid item xs={12} md={6}>
-          <Paper component="form" onSubmit={event => {
-            event.preventDefault();
-            requestPassword('create');
-          }} sx={{ p: 3, height: '100%' }}>
+          <Paper component="form" onSubmit={createCompany} sx={{ p: 3, height: '100%' }}>
             <Typography variant="h5" align="center" sx={{ fontWeight: 600, mb: 2 }}>Create Company</Typography>
 
             <CompanyFields form={createForm} onChange={handleCreateChange} />
@@ -254,14 +270,23 @@ const ManageCompanies = () => {
 
             <CompanyFields form={editForm} onChange={handleEditChange} disabled={!selectedCompany} />
 
-            <Button
-              variant="contained"
-              disabled={saving || !selectedCompany || !editForm.companyName.trim()}
-              onClick={() => requestPassword('update')}
-              sx={{ mt: 2, alignSelf: 'flex-start' }}
-            >
-              Save Changes
-            </Button>
+            <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+              <Button
+                variant="contained"
+                disabled={saving || !selectedCompany || !editForm.companyName.trim()}
+                onClick={() => requestPassword('update')}
+              >
+                Save Changes
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                disabled={saving || !canDeleteSelectedCompany}
+                onClick={() => requestPassword('delete')}
+              >
+                Delete
+              </Button>
+            </Stack>
 
             {selectedCompany && (
               <Box sx={{ mt: 3 }}>
@@ -270,7 +295,7 @@ const ManageCompanies = () => {
                   {attachedWorkOrders.length ? attachedWorkOrders.map(order => (
                     <Chip
                       key={order.workOrderID}
-                      label={`#${order.workOrderID} (${order.status?.replaceAll('_', ' ')})`}
+                      label={`#${order.workOrderID} (${order.status?.replaceAll('_', ' ')}${order.archived ? ', archived' : ''})`}
                       onClick={() => navigate(`/admin/workorders/${order.workOrderID}`)}
                       clickable
                     />
@@ -308,7 +333,7 @@ const ManageCompanies = () => {
                       <TableCell>{company.companyPhone || 'Not set'}</TableCell>
                       <TableCell>{formatDateTime(company.createdAt)}</TableCell>
                       <TableCell align="right">
-                        <Button size="small" color="warning" disabled={saving} onClick={() => requestPassword('archive', company)}>
+                        <Button size="small" color="warning" disabled={saving} onClick={() => archiveCompany(company)}>
                           Archive
                         </Button>
                       </TableCell>
@@ -331,8 +356,13 @@ const ManageCompanies = () => {
       </Snackbar>
 
       <Dialog open={passwordOpen} onClose={closePasswordDialog} fullWidth maxWidth="xs">
-        <DialogTitle>Confirm Changes</DialogTitle>
+        <DialogTitle>{pendingAction === 'delete' ? 'Delete Company' : 'Confirm Changes'}</DialogTitle>
         <DialogContent>
+          {pendingAction === 'delete' && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              This permanently deletes a company with no attached work orders and cannot be undone.
+            </Alert>
+          )}
           <TextField
             label="Enter your password"
             type="password"
@@ -344,8 +374,13 @@ const ManageCompanies = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={closePasswordDialog}>Cancel</Button>
-          <Button variant="contained" disabled={!password || saving} onClick={runPendingAction}>
-            Confirm
+          <Button
+            variant="contained"
+            color={pendingAction === 'delete' ? 'error' : 'primary'}
+            disabled={!password || saving}
+            onClick={runPendingAction}
+          >
+            {pendingAction === 'delete' ? 'Delete' : 'Confirm'}
           </Button>
         </DialogActions>
       </Dialog>

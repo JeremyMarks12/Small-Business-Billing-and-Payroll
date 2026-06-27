@@ -30,7 +30,9 @@ const LoginPage = () => {
                 username: data.workerUser,
                 firstName: data.workerFName,
                 lastName: data.workerLName,
+                displayName: data.workerDisplayName,
                 email: data.workerEmail,
+                lastLoginAt: data.lastLoginAt,
                 isAdmin: data.admin,
                 workerID: data.workerID
             });

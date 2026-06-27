@@ -34,19 +34,19 @@ const AdminHomePage = () => {
             ],
         },
         {
-            label: 'Companies',
-            key: 'companies',
-            children: [
-                { label: 'Active Companies', path: '/admin/companies' },
-                { label: 'Manage Companies', path: '/admin/manage-companies' },
-            ],
-        },
-        {
             label: 'Worker',
             key: 'worker',
             children: [
                 { label: 'Active Workers', path: '/admin/workers' },
                 { label: 'Manage Workers', path: '/admin/manage-workers' },
+            ],
+        },
+        {
+            label: 'Companies',
+            key: 'companies',
+            children: [
+                { label: 'Active Companies', path: '/admin/companies' },
+                { label: 'Manage Companies', path: '/admin/manage-companies' },
             ],
         },
         {
@@ -159,7 +159,7 @@ const AdminHomePage = () => {
                 
                 {user && (
                     <Typography variant="subtitle1" sx={{ marginBottom: 2 }}>
-                        Welcome, {user.firstName}
+                        Welcome, {user.displayName || user.firstName}
                     </Typography>
                 )}
                 

@@ -1,16 +1,13 @@
 package com.SBA.BillingSystem.services;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.SBA.BillingSystem.entities.WorkOrder;
 import com.SBA.BillingSystem.entities.Worker;
 import com.SBA.BillingSystem.enums.WorkOrderStatus;
 import com.SBA.BillingSystem.repositories.WorkerRepository;
@@ -74,13 +71,7 @@ public class WorkerService {
     	Worker worker = workerRepository.findById(id)
     			.orElseThrow(() -> new IllegalArgumentException("Worker not found"));
 
-    	if (request.getWorkerFName() != null) {
-    		worker.setWorkerFName(request.getWorkerFName());
-    	}
-
-    	if (request.getWorkerLName() != null) {
-    		worker.setWorkerLName(request.getWorkerLName());
-    	}
+    	updateWorkerProfileFields(worker, request);
 
     	if (request.getWorkerUser() != null) {
     		if (request.getWorkerUser().isBlank()) {
@@ -90,17 +81,47 @@ public class WorkerService {
     		worker.setWorkerUser(request.getWorkerUser());
     	}
 
+    	worker.setAdmin(request.isAdmin());
+
+    	return workerRepository.save(worker);
+    }
+
+    public Worker updateProfile(Integer id, Worker request) {
+    	Worker worker = workerRepository.findById(id)
+    			.orElseThrow(() -> new IllegalArgumentException("Worker not found"));
+
+    	updateWorkerProfileFields(worker, request);
+
+    	return workerRepository.save(worker);
+    }
+
+    public Worker recordLogin(String username) {
+        Worker worker = workerRepository.findByWorkerUserIgnoreCaseAndArchivedFalse(username)
+                .orElseThrow(() -> new IllegalArgumentException("Worker not found"));
+        worker.setLastLoginAt(LocalDateTime.now());
+        return workerRepository.save(worker);
+    }
+
+    private void updateWorkerProfileFields(Worker worker, Worker request) {
+    	if (request.getWorkerFName() != null) {
+    		worker.setWorkerFName(request.getWorkerFName());
+    	}
+
+    	if (request.getWorkerLName() != null) {
+    		worker.setWorkerLName(request.getWorkerLName());
+    	}
+
+    	if (request.getWorkerDisplayName() != null) {
+    		worker.setWorkerDisplayName(request.getWorkerDisplayName());
+    	}
+
     	if (request.getWorkerEmail() != null) {
     		if (request.getWorkerEmail().isBlank()) {
     			throw new IllegalArgumentException("Email is required");
     		}
-    		validateUniqueEmail(request.getWorkerEmail(), id);
+    		validateUniqueEmail(request.getWorkerEmail(), worker.getWorkerID());
     		worker.setWorkerEmail(request.getWorkerEmail());
     	}
-
-    	worker.setAdmin(request.isAdmin());
-
-    	return workerRepository.save(worker);
     }
 
     @Transactional
@@ -139,13 +160,12 @@ public class WorkerService {
     	Worker worker = workerRepository.findById(id)
     			.orElseThrow(() -> new IllegalArgumentException("Worker not found"));
 
-    	if (!worker.isArchived()) {
-    		throw new IllegalStateException("Only archived workers can be permanently deleted");
+    	if (worker.isArchived()) {
+    		throw new IllegalStateException("Archived workers can only be restored");
     	}
 
-    	Set<WorkOrder> workOrders = new HashSet<>(worker.getWorkOrders());
-    	for (WorkOrder workOrder : workOrders) {
-    		workOrder.removeWorker(worker);
+    	if (!worker.getWorkOrders().isEmpty()) {
+    		throw new IllegalStateException("Worker cannot be permanently deleted while work orders are attached");
     	}
 
     	workerRepository.delete(worker);

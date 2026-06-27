@@ -41,6 +41,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateUser = (userData) => {
+    const updatedUser = { ...user, ...userData };
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    localStorage.setItem('username', updatedUser.username);
+  };
+
   const logout = async () => {
     try {
       await apiFetch('/auth/logout', { method: 'POST' });
@@ -69,6 +76,7 @@ export const AuthProvider = ({ children }) => {
       value={{ 
         user, 
         login, 
+        updateUser,
         logout, 
         loading, 
         isAuthenticated,

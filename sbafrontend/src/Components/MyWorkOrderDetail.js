@@ -86,12 +86,6 @@ const MyWorkOrderDetail = () => {
   const itemHistory = [...items]
     .filter(item => item.createdAt || item.lastModifiedAt)
     .sort((a, b) => new Date(b.createdAt || b.lastModifiedAt) - new Date(a.createdAt || a.lastModifiedAt));
-  const actionLabels = {
-    items: 'Save Items',
-    comment: 'Update Comments',
-    submit: 'Submit for Review',
-  };
-
   const requestPassword = (action) => {
     setPendingAction(action);
     setPassword('');
@@ -113,7 +107,6 @@ const MyWorkOrderDetail = () => {
     setSaving(true);
     setMessage(null);
     try {
-      await verifyPassword();
       let updated = workOrder;
       for (const item of items) {
         const payload = {
@@ -135,9 +128,6 @@ const MyWorkOrderDetail = () => {
       }
       setWorkOrder(updated);
       setItems(Array.isArray(updated.items) ? updated.items : []);
-      setPassword('');
-      setPasswordOpen(false);
-      setPendingAction(null);
       setMessage({ severity: 'success', text: 'Items updated.' });
     } catch (error) {
       setMessage({ severity: 'error', text: error.message });
@@ -150,16 +140,12 @@ const MyWorkOrderDetail = () => {
     setSaving(true);
     setMessage(null);
     try {
-      await verifyPassword();
       const updated = await apiFetch(`/workorders/${workOrder.workOrderID}/comment`, {
         method: 'PUT',
         body: JSON.stringify({ comment }),
       });
       setWorkOrder(updated);
       setEditingComment(false);
-      setPassword('');
-      setPasswordOpen(false);
-      setPendingAction(null);
       setMessage({ severity: 'success', text: 'Comments updated.' });
     } catch (error) {
       setMessage({ severity: 'error', text: error.message });
@@ -187,14 +173,6 @@ const MyWorkOrderDetail = () => {
   };
 
   const runPendingAction = () => {
-    if (pendingAction === 'items') {
-      saveItems();
-      return;
-    }
-    if (pendingAction === 'comment') {
-      updateComment();
-      return;
-    }
     if (pendingAction === 'submit') {
       submitForReview();
     }
@@ -228,7 +206,7 @@ const MyWorkOrderDetail = () => {
         />
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
           <Button onClick={() => setEditingComment(true)}>Edit</Button>
-          <Button variant="contained" onClick={() => requestPassword('comment')} disabled={!editingComment || saving}>Update</Button>
+          <Button variant="contained" onClick={updateComment} disabled={!editingComment || saving}>Update</Button>
         </Box>
       </Paper>
 
@@ -299,7 +277,7 @@ const MyWorkOrderDetail = () => {
         </Table>
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, p: 2 }}>
           <Button onClick={() => setItems(current => [...current, emptyItem()])}>Add Item</Button>
-          <Button variant="contained" onClick={() => requestPassword('items')} disabled={saving}>Save Items</Button>
+          <Button variant="contained" onClick={saveItems} disabled={saving}>Save Items</Button>
         </Box>
       </TableContainer>
 
@@ -351,7 +329,7 @@ const MyWorkOrderDetail = () => {
         <DialogActions>
           <Button onClick={() => setPasswordOpen(false)}>Cancel</Button>
           <Button variant="contained" onClick={runPendingAction} disabled={!password || saving}>
-            {actionLabels[pendingAction] || 'Confirm'}
+            Submit for Review
           </Button>
         </DialogActions>
       </Dialog>

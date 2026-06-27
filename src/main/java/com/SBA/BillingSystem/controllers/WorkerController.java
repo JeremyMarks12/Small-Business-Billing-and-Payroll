@@ -2,6 +2,7 @@ package com.SBA.BillingSystem.controllers;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.SBA.BillingSystem.dto.PasswordResetRequest;
@@ -73,6 +74,20 @@ public class WorkerController {
     @PutMapping("/{id}")
     public Worker updateWorker(@PathVariable Integer id, @RequestBody Worker worker) {
     	return workerService.updateWorker(id, worker);
+    }
+
+    @PutMapping("/{id}/profile")
+    public Worker updateProfile(@PathVariable Integer id, @RequestBody Worker worker, Authentication authentication) {
+        Optional<Worker> currentWorker = workerService.findByUsername(authentication.getName());
+        boolean isOwnProfile = currentWorker.isPresent() && currentWorker.get().getWorkerID() == id;
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
+
+        if (!isOwnProfile && !isAdmin) {
+            throw new IllegalStateException("Only your own profile can be updated");
+        }
+
+    	return workerService.updateProfile(id, worker);
     }
 
     @PreAuthorize("hasRole('ADMIN')")

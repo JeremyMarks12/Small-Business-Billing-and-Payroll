@@ -5,6 +5,10 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   Grid,
   InputLabel,
@@ -24,9 +28,11 @@ import {
 import { apiFetch } from '../api';
 import { formatDateTime, getWorkOrderWorkers, normalizeWorker } from '../model';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from './AuthContext';
 
 const ManageWorkOrders = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [workers, setWorkers] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [workOrders, setWorkOrders] = useState([]);
@@ -39,6 +45,9 @@ const ManageWorkOrders = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [pendingDeleteWorkOrder, setPendingDeleteWorkOrder] = useState(null);
 
   const loadData = () => {
     setLoading(true);
@@ -80,6 +89,12 @@ const ManageWorkOrders = () => {
       (selectedModifyWorker && !isSelectedWorkerAssigned) ||
       (selectedModifyCompany && !isSelectedCompanyAssigned)
     )
+  );
+  const canDeleteWorkOrder = (order) => Boolean(
+    order &&
+    order.status === 'OPEN' &&
+    !order.endDateTime &&
+    !(order.items?.length)
   );
 
   const resetAssignForm = () => {
@@ -146,18 +161,40 @@ const ManageWorkOrders = () => {
     }
   };
 
-  const forceArchiveWorkOrder = async () => {
-    if (!selectedModifyWorkOrder) return;
-    if (!window.confirm(`Force archive work order #${selectedModifyWorkOrder.workOrderID}?`)) return;
+  const requestDeleteWorkOrder = (workOrder) => {
+    if (!canDeleteWorkOrder(workOrder)) return;
+
+    setPendingDeleteWorkOrder(workOrder);
+    setDeletePassword('');
+    setDeleteDialogOpen(true);
+  };
+
+  const closeDeleteDialog = () => {
+    setDeleteDialogOpen(false);
+    setDeletePassword('');
+    setPendingDeleteWorkOrder(null);
+  };
+
+  const deleteWorkOrder = async () => {
+    if (!pendingDeleteWorkOrder) return;
 
     setSaving(true);
     setMessage(null);
     try {
-      await apiFetch(`/workorders/${selectedModifyWorkOrder.workOrderID}/force-archive`, { method: 'PUT' });
-      setMessage({ severity: 'success', text: `Work order #${selectedModifyWorkOrder.workOrderID} force archived.` });
-      setModifyWorkOrderID('');
-      setRemoveWorkerID('');
-      setRemoveCompanyID('');
+      await apiFetch('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ username: user.username, password: deletePassword }),
+      });
+      await apiFetch(`/workorders/${pendingDeleteWorkOrder.workOrderID}/permanent`, { method: 'DELETE' });
+      setMessage({ severity: 'success', text: `Work order #${pendingDeleteWorkOrder.workOrderID} deleted.` });
+
+      if (Number(modifyWorkOrderID) === pendingDeleteWorkOrder.workOrderID) {
+        setModifyWorkOrderID('');
+        setRemoveWorkerID('');
+        setRemoveCompanyID('');
+      }
+
+      closeDeleteDialog();
       loadData();
     } catch (error) {
       setMessage({ severity: 'error', text: error.message });
@@ -387,10 +424,10 @@ const ManageWorkOrders = () => {
               <Button
                 variant="outlined"
                 color="error"
-                disabled={saving || !selectedModifyWorkOrder}
-                onClick={forceArchiveWorkOrder}
+                disabled={saving || !canDeleteWorkOrder(selectedModifyWorkOrder)}
+                onClick={() => requestDeleteWorkOrder(selectedModifyWorkOrder)}
               >
-                Force Archive
+                Delete
               </Button>
             </Stack>
 
@@ -544,6 +581,31 @@ const ManageWorkOrders = () => {
         </Grid>
       </Grid>
 
+      <Dialog open={deleteDialogOpen} onClose={closeDeleteDialog} fullWidth maxWidth="xs">
+        <DialogTitle>Delete Work Order</DialogTitle>
+        <DialogContent>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            This permanently deletes an empty open work order and cannot be undone.
+          </Alert>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            Enter your password to delete work order #{pendingDeleteWorkOrder?.workOrderID}.
+          </Typography>
+          <TextField
+            label="Enter your password"
+            type="password"
+            value={deletePassword}
+            onChange={event => setDeletePassword(event.target.value)}
+            fullWidth
+            margin="normal"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeDeleteDialog}>Cancel</Button>
+          <Button color="error" variant="contained" disabled={!deletePassword || saving} onClick={deleteWorkOrder}>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

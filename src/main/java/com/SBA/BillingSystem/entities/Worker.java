@@ -2,6 +2,7 @@ package com.SBA.BillingSystem.entities;
 
 import jakarta.persistence.*; // Defines how objects will map to the DB
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -22,6 +23,9 @@ public class Worker extends ArchivableEntity {
     @Column(name = "worker_last_name")
     private String workerLName;
 
+    @Column(name = "worker_display_name")
+    private String workerDisplayName;
+
     @Column(name = "worker_username", unique = true)
     private String workerUser;
     
@@ -37,6 +41,9 @@ public class Worker extends ArchivableEntity {
 	private Set<WorkOrder> workOrders = new HashSet<>();
 
     private boolean isAdmin;
+
+    @Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
 
     public Worker() {}
 
@@ -66,6 +73,10 @@ public class Worker extends ArchivableEntity {
     public String getWorkerLName() {
         return workerLName;
     }
+
+    public String getWorkerDisplayName() {
+        return workerDisplayName;
+    }
     
 	public String getWorkerUser() {
 		return workerUser;
@@ -78,6 +89,10 @@ public class Worker extends ArchivableEntity {
 	public Set<WorkOrder> getWorkOrders() {
 		return workOrders;
 	}
+
+    public LocalDateTime getLastLoginAt() {
+        return lastLoginAt;
+    }
 
 
     public void setWorkerFName(String workerFName) {
@@ -92,6 +107,10 @@ public class Worker extends ArchivableEntity {
 
     public void setWorkerLName(String workerLName) {
         this.workerLName = workerLName;
+    }
+
+    public void setWorkerDisplayName(String workerDisplayName) {
+        this.workerDisplayName = workerDisplayName;
     }
 
 
@@ -118,6 +137,10 @@ public class Worker extends ArchivableEntity {
 			}
 		}
 	}
+
+    public void setLastLoginAt(LocalDateTime lastLoginAt) {
+        this.lastLoginAt = lastLoginAt;
+    }
 
     public boolean isAdmin() {
         return Boolean.TRUE.equals(isAdmin);

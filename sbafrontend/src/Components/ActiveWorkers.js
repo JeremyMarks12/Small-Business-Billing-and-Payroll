@@ -5,7 +5,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../api';
-import { normalizeWorker } from '../model';
+import { formatDateTime, normalizeWorker } from '../model';
 
 const ActiveWorkers = () => {
   const navigate = useNavigate();
@@ -36,6 +36,7 @@ const ActiveWorkers = () => {
               <TableCell>Username</TableCell>
               <TableCell>Email</TableCell>
               <TableCell>Role</TableCell>
+              <TableCell>Last Login</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -49,11 +50,12 @@ const ActiveWorkers = () => {
                 <TableCell>{worker.username}</TableCell>
                 <TableCell>{worker.email}</TableCell>
                 <TableCell>{worker.isAdmin ? 'Admin' : 'Worker'}</TableCell>
+                <TableCell>{formatDateTime(worker.lastLoginAt)}</TableCell>
               </TableRow>
             ))}
             {!sortedWorkers.length && (
               <TableRow>
-                <TableCell colSpan={4}>No workers found.</TableCell>
+                <TableCell colSpan={5}>No workers found.</TableCell>
               </TableRow>
             )}
           </TableBody>

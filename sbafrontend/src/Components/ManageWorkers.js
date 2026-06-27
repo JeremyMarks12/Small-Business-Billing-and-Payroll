@@ -4,6 +4,7 @@ import {
   Box,
   Button,
   Checkbox,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -16,6 +17,7 @@ import {
   Paper,
   Select,
   Snackbar,
+  Stack,
   Table,
   TableBody,
   TableCell,
@@ -27,12 +29,13 @@ import {
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apiFetch } from '../api';
-import { formatDateTime, normalizeWorker, workerPayload } from '../model';
+import { formatDateTime, getWorkOrderWorkers, normalizeWorker, workerPayload } from '../model';
 import { useAuth } from './AuthContext';
 
 const emptyWorker = {
   firstName: '',
   lastName: '',
+  displayName: '',
   username: '',
   email: '',
   password: '',
@@ -44,6 +47,7 @@ const WorkerFields = ({ form, onChange, mode }) => (
   <>
     <TextField label="First Name" name="firstName" value={form.firstName} onChange={onChange} fullWidth margin="normal" />
     <TextField label="Last Name" name="lastName" value={form.lastName} onChange={onChange} fullWidth margin="normal" />
+    <TextField label="Display Name" name="displayName" value={form.displayName} onChange={onChange} fullWidth margin="normal" />
     <TextField label="Username" name="username" value={form.username} onChange={onChange} fullWidth margin="normal" disabled={mode === 'edit'} />
     <TextField label="Email" name="email" type="email" value={form.email} onChange={onChange} fullWidth margin="normal" />
     {mode === 'create' && (
@@ -60,6 +64,7 @@ const ManageWorkers = () => {
   const { user } = useAuth();
   const { workerID: routeWorkerID } = useParams();
   const [workers, setWorkers] = useState([]);
+  const [workOrders, setWorkOrders] = useState([]);
   const [workerID, setWorkerID] = useState(routeWorkerID || '');
   const [createForm, setCreateForm] = useState(emptyWorker);
   const [editForm, setEditForm] = useState(emptyWorker);
@@ -71,12 +76,16 @@ const ManageWorkers = () => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   const fetchWorkers = useCallback(async () => {
-    const data = await apiFetch('/workers');
+    const [data, workOrderData] = await Promise.all([
+      apiFetch('/workers'),
+      apiFetch('/workorders/all-with-archived'),
+    ]);
     const normalizedWorkers = data
       .map(normalizeWorker)
       .sort((a, b) => `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`));
 
     setWorkers(normalizedWorkers);
+    setWorkOrders(workOrderData);
   }, []);
 
   useEffect(() => {
@@ -93,12 +102,26 @@ const ManageWorkers = () => {
     () => workers.find(worker => worker.workerID === Number(workerID)),
     [workers, workerID]
   );
+  const attachedWorkOrders = useMemo(
+    () => selectedWorker
+      ? workOrders.filter(order =>
+          getWorkOrderWorkers(order).some(worker => worker.workerID === selectedWorker.workerID)
+        )
+      : [],
+    [selectedWorker, workOrders]
+  );
+  const visibleAttachedWorkOrders = useMemo(
+    () => attachedWorkOrders.filter(order => !order.archived && order.status !== 'COMPLETE'),
+    [attachedWorkOrders]
+  );
+  const canDeleteSelectedWorker = Boolean(selectedWorker && attachedWorkOrders.length === 0);
 
   useEffect(() => {
     if (selectedWorker) {
       setEditForm({
         firstName: selectedWorker.firstName || '',
         lastName: selectedWorker.lastName || '',
+        displayName: selectedWorker.displayName || '',
         username: selectedWorker.username || '',
         email: selectedWorker.email || '',
         password: '',
@@ -154,7 +177,6 @@ const ManageWorkers = () => {
 
     setSaving(true);
     try {
-      await verifyPassword();
       await apiFetch('/workers', {
         method: 'POST',
         body: JSON.stringify(workerPayload({
@@ -164,7 +186,6 @@ const ManageWorkers = () => {
       });
       setCreateForm(emptyWorker);
       await fetchWorkers();
-      closePasswordDialog();
       showMessage('Worker created successfully.');
     } catch (error) {
       showMessage(error.message, 'error');
@@ -184,6 +205,7 @@ const ManageWorkers = () => {
         body: JSON.stringify({
           workerFName: editForm.firstName,
           workerLName: editForm.lastName,
+          workerDisplayName: editForm.displayName,
           workerUser: editForm.username,
           workerEmail: editForm.email,
           admin: editForm.isAdmin,
@@ -208,14 +230,30 @@ const ManageWorkers = () => {
 
     setSaving(true);
     try {
-      await verifyPassword();
       await apiFetch(`/workers/${worker.workerID}`, { method: 'DELETE' });
       if (Number(workerID) === worker.workerID) {
         setWorkerID('');
       }
       await fetchWorkers();
-      closePasswordDialog();
       showMessage('Worker archived successfully.');
+    } catch (error) {
+      showMessage(error.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteWorker = async () => {
+    if (!selectedWorker || !canDeleteSelectedWorker) return;
+
+    setSaving(true);
+    try {
+      await verifyPassword();
+      await apiFetch(`/workers/${selectedWorker.workerID}/permanent`, { method: 'DELETE' });
+      setWorkerID('');
+      await fetchWorkers();
+      closePasswordDialog();
+      showMessage('Worker permanently deleted.');
     } catch (error) {
       showMessage(error.message, 'error');
     } finally {
@@ -234,6 +272,10 @@ const ManageWorkers = () => {
     }
     if (pendingAction === 'archive') {
       archiveWorker(pendingWorker);
+      return;
+    }
+    if (pendingAction === 'delete') {
+      deleteWorker();
     }
   };
 
@@ -244,10 +286,7 @@ const ManageWorkers = () => {
 
       <Grid container spacing={3} alignItems="stretch">
         <Grid item xs={12} md={6}>
-          <Paper component="form" onSubmit={event => {
-            event.preventDefault();
-            requestPassword('create');
-          }} sx={{ p: 3, height: '100%' }}>
+          <Paper component="form" onSubmit={createWorker} sx={{ p: 3, height: '100%' }}>
             <Typography variant="h5" align="center" sx={{ fontWeight: 600, mb: 2 }}>Create Worker</Typography>
 
             <WorkerFields form={createForm} onChange={handleCreateChange} mode="create" />
@@ -282,7 +321,7 @@ const ManageWorkers = () => {
               <InputLabel>Worker</InputLabel>
               <Select value={workerID} label="Worker" onChange={event => setWorkerID(event.target.value)}>
                 <MenuItem value="">No worker selected</MenuItem>
-                {workers.map(worker => (
+                {workers.filter(worker => !worker.isAdmin).map(worker => (
                   <MenuItem key={worker.workerID} value={worker.workerID}>
                     {worker.firstName} {worker.lastName}{worker.isAdmin ? ' (Admin)' : ''}
                   </MenuItem>
@@ -292,14 +331,39 @@ const ManageWorkers = () => {
 
             <WorkerFields form={editForm} onChange={handleEditChange} mode="edit" />
 
-            <Button
-              variant="contained"
-              disabled={saving || !selectedWorker || !editForm.firstName.trim() || !editForm.lastName.trim() || !editForm.email.trim()}
-              onClick={() => requestPassword('update')}
-              sx={{ mt: 2, alignSelf: 'flex-start' }}
-            >
-              Save Changes
-            </Button>
+            <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+              <Button
+                variant="contained"
+                disabled={saving || !selectedWorker || !editForm.firstName.trim() || !editForm.lastName.trim() || !editForm.email.trim()}
+                onClick={() => requestPassword('update')}
+              >
+                Save Changes
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                disabled={saving || !canDeleteSelectedWorker}
+                onClick={() => requestPassword('delete')}
+              >
+                Delete
+              </Button>
+            </Stack>
+
+            {selectedWorker && (
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>Associated Work Orders</Typography>
+                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                  {visibleAttachedWorkOrders.length ? visibleAttachedWorkOrders.map(order => (
+                    <Chip
+                      key={order.workOrderID}
+                      label={`#${order.workOrderID} (${order.status?.replaceAll('_', ' ')})`}
+                      onClick={() => navigate(`/admin/workorders/${order.workOrderID}`)}
+                      clickable
+                    />
+                  )) : <Chip label="No active open work orders" />}
+                </Stack>
+              </Box>
+            )}
 
           </Paper>
         </Grid>
@@ -335,7 +399,7 @@ const ManageWorkers = () => {
                       <TableCell>{formatDateTime(worker.createdAt)}</TableCell>
                       <TableCell>{formatDateTime(worker.lastModifiedAt)}</TableCell>
                       <TableCell align="right">
-                        <Button size="small" color="warning" disabled={saving} onClick={() => requestPassword('archive', worker)}>
+                        <Button size="small" color="warning" disabled={saving} onClick={() => archiveWorker(worker)}>
                           Archive
                         </Button>
                       </TableCell>
@@ -358,8 +422,13 @@ const ManageWorkers = () => {
       </Snackbar>
 
       <Dialog open={passwordOpen} onClose={closePasswordDialog} fullWidth maxWidth="xs">
-        <DialogTitle>Confirm Changes</DialogTitle>
+        <DialogTitle>{pendingAction === 'delete' ? 'Delete Worker' : 'Confirm Changes'}</DialogTitle>
         <DialogContent>
+          {pendingAction === 'delete' && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              This permanently deletes a worker with no attached work orders and cannot be undone.
+            </Alert>
+          )}
           <TextField
             label="Enter your password"
             type="password"
@@ -371,8 +440,13 @@ const ManageWorkers = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={closePasswordDialog}>Cancel</Button>
-          <Button variant="contained" disabled={!password || saving} onClick={runPendingAction}>
-            Confirm
+          <Button
+            variant="contained"
+            color={pendingAction === 'delete' ? 'error' : 'primary'}
+            disabled={!password || saving}
+            onClick={runPendingAction}
+          >
+            {pendingAction === 'delete' ? 'Delete' : 'Confirm'}
           </Button>
         </DialogActions>
       </Dialog>
